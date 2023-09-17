@@ -49,7 +49,7 @@ class Model(NetInterface):
         self.gt_names = []
         self.requires = list(set().union(self.input_names, self.gt_names))
 
-        img_resize = []
+        img_resize = list()
         if opt.dataset == "kitti":
             img_resize = [256, 832]
         elif opt.dataset == "ddad":
@@ -105,15 +105,20 @@ class Model(NetInterface):
         for optimizer in self._optimizers:
             optimizer.step()
 
-        # TODO batch_log
+        # TODO virtualization
+
+        batch_log = {"size": self.opt.batch_size, "loss": loss.item(), **loss_data}
+
+        return batch_log
 
     def _vali_on_batch(self, epoch, batch_idx, batch):
         for n in self._nets:
             n.eval()
+
         self.load_batch(batch)
 
         with torch.no_grad():
-            pred = self._predict_on_batch()
+            pred = self._predict_on_batch(is_train=False)
 
         if self.opt.val_mode == "depth":
             errs = LossF.compute_errors(
@@ -142,7 +147,13 @@ class Model(NetInterface):
             raise NotImplementedError(
                 f"validation mode {self.opt.val_mod} not supported"
             )
-        # TODO batch_log
+
+        # TODO vitualization
+
+        batch_size = batch["tgt_img"].shape[0]
+        batch_log = {"size": batch_size, **errs}
+
+        return batch_log
 
     def _calc_loss(self, pred):
         photo_loss, geometry_loss, dynamic_mask = LossF.photo_and_geometry_loss(
@@ -194,24 +205,51 @@ class Model(NetInterface):
 
         return total_loss, loss_data
 
-    def _predict_on_batch(self):
-        result = {
-            "tgt_depth": self.depth_net(self._input.tgt_img),
-            "ref_depths": [
-                self.depth_net(im) for im in self._input.ref_imgs
-            ],
-            "poses": [
-                self.pose_net(self._input.tgt_img, im) for im in self._input.ref_imgs
-            ],
-            "poses_inv": [
-                self.pose_net(im, self._input.tgt_img) for im in self._input.ref_imgs
-            ],
-            "tgt_normal": depth_to_normals(
-                self._input.tgt_depth, self._input.intrinsics
-            ),
-            "tgt_pseudo_normal": depth_to_normals(
-                self._input.tgt_pseudo_depth, self._input.intrinsics
-            ),
-        }
+    def _predict_on_batch(self, is_train=True):
+        if is_train:
+            result = {
+                "tgt_depth": self.depth_net(self._input.tgt_img),
+                "ref_depths": [
+                    self.depth_net(im)
+                    for im in self._input.ref_imgs
+                ],
+                "poses": [
+                    self.pose_net(self._input.tgt_img, im)
+                    for im in self._input.ref_imgs
+                ],
+                "poses_inv": [
+                    self.pose_net(im, self._input.tgt_img)
+                    for im in self._input.ref_imgs
+                ],
+                "tgt_normal": depth_to_normals(
+                    self._input.tgt_depth, self._input.intrinsics
+                ),
+                "tgt_pseudo_normal": depth_to_normals(
+                    self._input.tgt_pseudo_depth, self._input.intrinsics
+                ),
+            }
+        else:
+            if self.opt.val_mode == "depth":
+                result = {"tgt_depth": self.depth_net(self._input.tgt_img)}
+            elif self.opt.val_mode == "photo":
+                result = {
+                    "tgt_depth": self.depth_net(self._input.tgt_img),
+                    "ref_depths": [
+                        self.depth_net(im)
+                        for im in self._input.ref_imgs
+                    ],
+                    "poses": [
+                        self.pose_net(self._input.tgt_img, im)
+                        for im in self._input.ref_imgs
+                    ],
+                    "poses_inv": [
+                        self.pose_net(im, self._input.tgt_img)
+                        for im in self._input.ref_imgs
+                    ],
+                }
+            else:
+                raise NotImplementedError(
+                    f"validation mode {self.opt.val_mod} not supported"
+                )
 
         return result

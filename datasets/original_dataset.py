@@ -160,6 +160,7 @@ class Dataset(base_dataset):
                 sample_loaded.update({"tgt_pseudo_depth": tgt_pseudo_depth})
 
         self.convert_to_torch(sample_loaded)
+
         return sample_loaded
 
     def _crawl_train_folders(self, sequence_length):
