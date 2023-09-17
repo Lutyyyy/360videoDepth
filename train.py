@@ -354,7 +354,7 @@ def main_worker(local_rank, ngpus, opt):
             "# training points: " + str(len(dataset_train))
         )
         _safe_print(
-            str_verbose, 
+            str_verbose,
             "# training batches per epoch: " + str(len(dataloader_train))
         )
         _safe_print(
@@ -382,10 +382,11 @@ def main_worker(local_rank, ngpus, opt):
         with open(opt.test_template) as f:
             cmd = f.readlines()[0]
         cmd = cmd.format(suffix_expand=opt.suffix.format(**vars(opt)), **vars(opt))
-        from subprocess import call
-
         with open(os.path.join(opt.full_logdir, "test_cmd.sh"), "w") as f:
             f.write(cmd)
+
+        from subprocess import call
+
         call(cmd, shell=True)
 
 

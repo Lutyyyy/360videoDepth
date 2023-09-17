@@ -6,8 +6,10 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch import FloatTensor
 import torch.distributed as dist
+from torch.nn import init
 
 from util.util_print import str_warning
+from loggers.loggers import _LogCumulator
 
 
 class NetInterface(object):
@@ -27,7 +29,12 @@ class NetInterface(object):
         'size': the batch size for the batch
     """
 
-    def __init__(self, opt):
+    @classmethod
+    def add_argument(cla, parser):
+        unique_params = set()
+        return parser, unique_params
+
+    def __init__(self, opt, logger):
         self.optim_params = dict()
         if opt.optim == "adam":
             self.optim = optim.Adam
@@ -39,6 +46,10 @@ class NetInterface(object):
             self.optim_params["weight_decay"] = opt.wdecay
         else:
             raise NotImplementedError("optimizer %s has not been added yet" % opt.optim)
+
+        self._internal_logger = _LogCumulator()
+        logger.add_logger(self._internal_logger)
+        self._logger = logger
 
         self.opt = opt
         self.full_dir = opt.full_dir
@@ -64,6 +75,49 @@ class NetInterface(object):
             self._moveable_vars.append("_gt." + name)
             if add_path:
                 setattr(self._gt, name + "_path", None)
+
+    def init_weight(
+        self,
+        net=None,
+        init_type="kaiming",
+        init_param=0.02,
+        a=0,
+        turnoff_tracking=False,
+    ):
+        """
+        This is borrowed from Junyan
+        """
+
+        def init_func(m, init_type=init_type):
+            classname = m.__class__.__name__
+            if hasattr(m, "weight") and (
+                classname.find("Conv") != -1 or classname.find("Linear") != -1
+            ):
+                if init_type == "normal":
+                    init.normal_(m.weight.data, 0.0, init_param)
+                elif init_type == "xavier":
+                    init.xavier_normal_(m.weight.data, gain=init_param)
+                elif init_type == "kaiming":
+                    init.kaiming_normal_(m.weight.data, a=a, mode="fan_in")
+                elif init_type == "orth":
+                    init.orthogonal_(m.weight.data, gain=init_param)
+                else:
+                    raise NotImplementedError(
+                        "initialization method [%s] is not implemented" % init_type
+                    )
+                if hasattr(m, "bias") and m.bias is not None:
+                    init.constant_(m.bias.data, 0.0)
+            elif classname.find("BatchNorm") != -1:
+                if m.affine:
+                    init.normal_(m.weight.data, 1.0, init_param)
+                    init.constant_(m.bias.data, 0.0)
+                if turnoff_tracking:
+                    m.track_running_stats = False
+
+        if net is not None:
+            net.apply(init_func)
+        else:
+            self.net.apply(init_func)
 
     def move_vars_to(self, device, non_blocking=False):
         for v in self._moveable_vars:

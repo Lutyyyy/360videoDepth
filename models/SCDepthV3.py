@@ -33,6 +33,8 @@ class Model(NetInterface):
                             help='weight for normal L1 loss')
         parser.add_argument('--normal_rank_weight', type=float, default=0.1,
                             help='edge-guided sampling for normal ranking loss')
+        
+        return parser, set()
 
     def __init__(self, opt, logger):
         super().__init__()
