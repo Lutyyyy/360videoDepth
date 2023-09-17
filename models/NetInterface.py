@@ -178,11 +178,14 @@ class NetInterface(object):
         epochs=1,
         initial_epoch=1,
         verbose=1,
-        reset_dataset=None,
         vali_at_start=False,
         global_rank=0,
         train_epoch_callback=None
     ):
+        """
+        Train the model with given dataloader and run evaluation with the given dataloader_vali
+        max_batches_per_train: limit the number of batches for each epoch
+        """
         steps_per_epoch = len(dataloader)
         samples_per_epoch = _get_num_samples(dataloader)
         if max_batches_per_train is not None:
