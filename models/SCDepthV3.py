@@ -1,3 +1,5 @@
+import os
+
 import torch
 from kornia.geometry.depth import depth_to_normals
 
@@ -209,10 +211,7 @@ class Model(NetInterface):
         if is_train:
             result = {
                 "tgt_depth": self.depth_net(self._input.tgt_img),
-                "ref_depths": [
-                    self.depth_net(im)
-                    for im in self._input.ref_imgs
-                ],
+                "ref_depths": [self.depth_net(im) for im in self._input.ref_imgs],
                 "poses": [
                     self.pose_net(self._input.tgt_img, im)
                     for im in self._input.ref_imgs
@@ -234,10 +233,7 @@ class Model(NetInterface):
             elif self.opt.val_mode == "photo":
                 result = {
                     "tgt_depth": self.depth_net(self._input.tgt_img),
-                    "ref_depths": [
-                        self.depth_net(im)
-                        for im in self._input.ref_imgs
-                    ],
+                    "ref_depths": [self.depth_net(im) for im in self._input.ref_imgs],
                     "poses": [
                         self.pose_net(self._input.tgt_img, im)
                         for im in self._input.ref_imgs
@@ -253,3 +249,21 @@ class Model(NetInterface):
                 )
 
         return result
+
+    def test_on_batch(self, batch_idx, batch):
+        for n in self._nets:
+            n.eval()
+
+        self.load_batch(batch)
+
+        with torch.no_grad():
+            pred = self._predict_on_batch(is_train=False)
+
+        for k, v in pred.items():
+            pred[k] = v.cpu().numpy()
+
+        epoch_string = "best" if self.opt.epoch < 0 else "%04d" % self.opt.epoch
+        outdir = os.path.join(self.opt.output_dir, "epoch%s_test" % epoch_string)
+        if not hasattr(self, "outdir"):
+            self.outdir = outdir
+        os.makedirs(outdir, exist_ok=True)
