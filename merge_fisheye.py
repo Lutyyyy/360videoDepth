@@ -1,5 +1,3 @@
-# Implemented by Chat-GPT3.5
-
 import torch
 import torchvision.transforms.functional as TF
 

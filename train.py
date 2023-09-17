@@ -349,11 +349,18 @@ def main_worker(local_rank, ngpus, opt):
             str_verbose,
             "Time spent in data IO initialization: %.2fs" % (time.time() - start_time),
         )
-        _safe_print(str_verbose, "# training points: " + str(len(dataset_train)))
         _safe_print(
-            str_verbose, "# training batches per epoch: " + str(len(dataloader_train))
+            str_verbose,
+            "# training points: " + str(len(dataset_train))
         )
-        _safe_print(str_verbose, "# test batches: " + str(len(dataloader_vali)))
+        _safe_print(
+            str_verbose, 
+            "# training batches per epoch: " + str(len(dataloader_train))
+        )
+        _safe_print(
+            str_verbose,
+            "# test batches: " + str(len(dataloader_vali))
+        )
 
     # Training
     if opt.epoch > 0:

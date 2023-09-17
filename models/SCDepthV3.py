@@ -195,7 +195,9 @@ class Model(NetInterface):
     def _predict_on_batch(self):
         result = {
             "tgt_depth": self.depth_net(self._input.tgt_img),
-            "ref_depths": [self.depth_net(im) for im in self._input.ref_imgs],
+            "ref_depths": [
+                self.depth_net(im) for im in self._input.ref_imgs
+            ],
             "poses": [
                 self.pose_net(self._input.tgt_img, im) for im in self._input.ref_imgs
             ],
