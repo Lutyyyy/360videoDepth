@@ -369,9 +369,9 @@ def main_worker(local_rank, ngpus, opt):
             dataloader_train,
             dataloader_vali=dataloader_vali,
             max_batches_per_train=opt.epoch_batches,
+            max_batches_per_vali=opt.vali_batches,
             epochs=opt.epoch,
             initial_epoch=initial_epoch,
-            max_batches_per_vali=opt.vali_batches,
             vali_at_start=opt.vali_at_start,
             train_epoch_callback=call_back,
         )

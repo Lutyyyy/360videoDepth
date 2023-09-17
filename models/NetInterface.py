@@ -186,6 +186,7 @@ class NetInterface(object):
         Train the model with given dataloader and run evaluation with the given dataloader_vali
         max_batches_per_train: limit the number of batches for each epoch
         """
+        logger = self._logger
         steps_per_epoch = len(dataloader)
         samples_per_epoch = _get_num_samples(dataloader)
         if max_batches_per_train is not None:
@@ -206,29 +207,55 @@ class NetInterface(object):
             steps_per_eval = 0
             samples_per_eval = 0
 
+        logger.set_params(
+            {
+                "epochs": epochs + initial_epoch - 1,
+                "steps": steps_per_epoch,
+                "steps_eval": steps_per_eval,
+                "samples": samples_per_epoch,
+                "samples_eval": samples_per_eval,
+                "verbose": 1,
+                "metrics": self._metrics,
+            }
+        )
+
+        logger.set_model(self)
+        logger.on_train_begin()
+
+        # define train closure
         def _train(epoch):
             nonlocal steps_per_epoch
             nonlocal samples_per_epoch
             nonlocal steps_per_eval
             nonlocal samples_per_eval
+
             self.train()  # Set Net to train mode
+            logger.train()
+            logger.on_epoch_begin()
+
             end = time.time()
             for i, data in enumerate(dataloader):
                 if i >= steps_per_epoch:
                     break
-                start_time = time.time()
 
+                start_time = time.time()
                 data_time = time.time() - end
+
+                logger.on_batch_begin(i)
+
                 batch_log = self._train_on_batch(epoch, i, data)
                 if batch_log is None:
                     raise ValueError(
                         "Batch log is not returned by _train_on_batch method. Aborting."
                     )
+
                 batch_log["batch"] = i
                 batch_log["epoch"] = epoch
                 batch_log["data_time"] = data_time
                 batch_log["batch_time"] = time.time() - start_time
+                logger.on_batch_end(i, batch_log)
                 end = time.time()
+
             epoch_log = self._internal_logger.get_epoch_log()
             if self.opt.multiprocess_distributed:
                 sync_log = {}
@@ -237,19 +264,29 @@ class NetInterface(object):
                     dist.reduce(v, 0, async_op=False)
                     v = v.cpu().numpy() / (self.opt.world_size * self.opt.ngpus)
                     sync_log[k] = v
+                logger.on_epoch_end(epoch, sync_log)
+            else:
+                logger.on_epoch_end(epoch, epoch_log)
 
+        # define vali closure
         def _vali(epoch):
             self.eval()
+            logger.eval()
             dataiter = iter(dataloader_vali)
+            logger.on_epoch_begin(epoch)
+
             for i in range(steps_per_eval):
                 start_time = time.time()
                 data = next(dataiter)
                 data_time = time.time() - start_time
+                logger.on_batch_begin(i)
                 batch_log = self._vali_on_batch(epoch, i, data)
                 batch_log["batch"] = i
                 batch_log["epoch"] = epoch
                 batch_log["data_time"] = data_time
                 batch_log["batch_time"] = time.time() - start_time
+                logger.on_batch_end(i, batch_log)
+
             epoch_log = self._internal_logger.get_epoch_log()
             if self.opt.multiprocess_distributed:
                 sync_log = {}
@@ -258,6 +295,9 @@ class NetInterface(object):
                     dist.reduce(v, 0, async_op=False)
                     v = v.cpu().numpy() / (self.opt.world_size * self.opt.ngpus)
                     sync_log[k] = v
+                logger.on_epoch_end(epoch, sync_log)
+            else:
+                logger.on_epoch_end(epoch, epoch_log)
 
         # Run actual training
         if vali_at_start:
@@ -272,6 +312,8 @@ class NetInterface(object):
                 train_epoch_callback(epoch)
             if dataloader_vali is not None:
                 _vali(epoch)
+
+        logger.on_train_end()
 
     def to(self, device):
         for net in self._nets:
