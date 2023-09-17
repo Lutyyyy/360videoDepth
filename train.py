@@ -220,7 +220,7 @@ def main_worker(local_rank, ngpus, opt):
         html_summary_filepath = os.path.join(opt.full_logdir, "summary")
         html_logger = loggers.HtmlLogger(html_summary_filepath)
         logger_list.append(html_logger)
-    else:
+    elif global_rank:
         # other procs do no log.
         logger = loggers.ComposeLogger([loggers.TerminateOnNaN()])
 
