@@ -98,7 +98,7 @@ def add_general_arguments(parser):
     parser.add_argument('--full_logdir', type=str, default=None,
                         help='having the option to override this. \
                             this is useful for resuming to another dataset for finetuning purposes.')
-    parser.add_argument('--exprdir_no_prefix', action='store_true',
+    parser.add_argument('--exprdir_no_prefix', action='store_true', default=False,
                         help='do not append the prefix to logdir. without this, expr_dir is set to net_classes_dataset')
     parser.add_argument('--pt_no_overwrite', action='store_true',
                         help='having the option to not overwrite previous pt for on the fly eval purposes.')

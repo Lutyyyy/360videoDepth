@@ -10,9 +10,9 @@ import torch.utils.data.distributed
 import torch.distributed as dist
 import torch.utils.data._utils
 
-from options import options_train
 import datasets
 import models
+from options import options_train
 from util.util_print import str_error, str_stage, str_verbose, str_warning
 from util import util_loadlib as loadlib
 from loggers import loggers

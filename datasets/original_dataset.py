@@ -29,7 +29,7 @@ class Dataset(base_dataset):
         self.mode = mode
         assert mode in ("train", "vali")
 
-        data_root = os.path.join(util.project_path, "./datafiles/original_data")
+        data_root = os.path.join(util.project_path, "./datafiles/original_data", opt.dataset)
 
         self.img_resize = []
         if opt.dataset == "kitti":
