@@ -4,6 +4,7 @@ class Bcolors:
         self.OKBLUE = "\033[94m"
         self.OKGREEN = "\033[92m"
         self.WARNING = "\033[93m"
+        self.DEBUG = "\033[97m"
         self.FAIL = "\033[91m"
         self.ENDC = "\033[0m"
 
@@ -35,3 +36,4 @@ str_stage = bcolors.OKBLUE + "==>" + bcolors.ENDC
 str_verbose = bcolors.OKGREEN + "[Verbose]" + bcolors.ENDC
 str_warning = bcolors.WARNING + "[Warning]" + bcolors.ENDC
 str_error = bcolors.FAIL + "[Error]" + bcolors.ENDC
+str_debug = bcolors.DEBUG + "[Debug...]" + bcolors.ENDC

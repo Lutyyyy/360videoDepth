@@ -148,7 +148,7 @@ def main_worker(local_rank, ngpus, opt):
         loadlib.set_manual_seed(opt.manual_seed)
 
     # Setting up loggers
-    logdir = opt.full_dir
+    logdir = opt.full_logdir
     _safe_print(str_stage, "Setting up loggers")
     if opt.resume != 0 and os.path.isfile(os.path.join(logdir, "best.pt")):
         try:

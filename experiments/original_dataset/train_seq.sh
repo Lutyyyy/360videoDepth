@@ -4,6 +4,7 @@ if [ $# -lt 1 ]; then
     echo "Usage: $0 gpu "
     exit 1
 fi
+gpu="$1"
 shift
 set -e
 cmd="

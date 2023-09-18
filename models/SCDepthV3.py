@@ -11,7 +11,7 @@ import losses.loss_functions as LossF
 
 class Model(NetInterface):
     @classmethod
-    def add_argument(cls, parser):
+    def add_arguments(cls, parser):
         # model options
         parser.add_argument('--resnet_layers', type=int, default=18, choices=[18, 34, 50, 101, 152],
                             help='number of resnet layers for depth network')
@@ -39,7 +39,7 @@ class Model(NetInterface):
         return parser, set()
 
     def __init__(self, opt, logger):
-        super().__init__()
+        super().__init__(opt, logger)
 
         self.input_names = [
             "tgt_img",

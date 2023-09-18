@@ -87,7 +87,7 @@ class ResnetEncoder(nn.Module):
                 num_layers, pretrained, num_input_images)
         else:
             if pretrained:
-                self.encoder = resnets[num_layers](weights="IMAGENET1K_V1")
+                self.encoder = resnets[num_layers](pretrained=True)
             else:
                 self.encoder = resnets[num_layers]()
 

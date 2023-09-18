@@ -2,17 +2,18 @@ import os
 import numpy as np
 from imageio import imread
 from scipy import sparse
+from path import Path
 
 import torch
 
-from base_dataset import Dataset as base_dataset
-import custom_transforms
+from .base_dataset import Dataset as base_dataset
+from . import custom_transforms
 import util
 
 
 class Dataset(base_dataset):
     @classmethod
-    def add_argument(cls, parser):
+    def add_arguments(cls, parser):
         parser.add_argument('--sequence_length', type=int, default=3,
                             help='number of images for training')
         parser.add_argument('--skip_frames', type=int, default=1,
@@ -24,12 +25,14 @@ class Dataset(base_dataset):
         return parser, set()
 
     def __init__(self, opt, mode="train"):
-        super.__init__()
+        super().__init__(opt, mode)
 
         self.mode = mode
         assert mode in ("train", "vali")
 
-        data_root = os.path.join(util.project_path, "./datafiles/original_data", opt.dataset)
+        data_root = os.path.join(
+            os.path.dirname(util.project_path), "autodl-tmp/datafiles/original_dataset"
+        )
 
         self.img_resize = []
         if opt.dataset == "kitti":
@@ -53,11 +56,10 @@ class Dataset(base_dataset):
                     custom_transforms.Normalize(),
                 ]
             )
-            self.data_path = os.path.join(data_root, f"{opt.dataset}", "training")
-            scene_list_path = os.path.join(self.data_path, "train.txt")
+            self.data_path = Path(data_root) / f"{opt.dataset}" / "training"
+            scene_list_path = self.data_path / "train.txt"
             self.scenes = [
-                os.path.join(self.data_path, folder[:-1])
-                for folder in open(scene_list_path)
+                self.data_path / folder[:-1] for folder in open(scene_list_path)
             ]
             self.k = opt.skip_frames
             self.use_frame_index = opt.use_frame_index
@@ -71,25 +73,24 @@ class Dataset(base_dataset):
                     custom_transforms.Normalize(),
                 ]
             )
-            self.data_path = os.path.join(data_root, f"{opt.dataset}", "training")
-            scene_list_path = os.path.join(self.data_path, "val.txt")
+            self.data_path = Path(data_root) / f"{opt.dataset}" / "training"
+            scene_list_path = self.data_path / "val.txt"
+            self.scenes = [
+                self.data_path / folder[:-1] for folder in open(scene_list_path)
+            ]
             if self.opt.val_mode == "photo":
-                self.scenes = [
-                    os.path.join(self.data_path, folder[:-1])
-                    for folder in open(scene_list_path)
-                ]
                 self.k = opt.skip_frames
                 self.use_frame_index = opt.use_frame_index
                 self.with_pseudo_depth = False
                 self._crawl_train_folders(opt.sequence_length)
             else:
                 self.imgs, self.depth = self._crawl_vali_folders(
-                    self.scenes, self.opt.dataset
+                    self.scenes, opt.dataset
                 )
 
     def __len__(self):
-        if self.mode != "train":
-            return len(self.samples)
+        if self.mode != "train" and self.opt.val_mode == "depth":
+            return len(self.imgs)
         else:
             return len(self.samples) * self.opt.repeat
 
@@ -129,12 +130,19 @@ class Dataset(base_dataset):
                 imread(ref_img).astype(np.float32) for ref_img in sample["ref_imgs"]
             ]
 
+            if self.mode == "train":
+                data_transform = self.train_transform
+            elif self.mode == "vali" and self.opt.val_mode == "photo":
+                data_transform = self.valid_transform
+            else:
+                raise NotImplemented(f"Unknown transformation")
+
             if self.with_pseudo_depth:
                 tgt_pseudo_depth = imread(sample["tgt_pseudo_depth"]).astype(np.float32)
 
-            if self.train_transform is not None:
+            if data_transform is not None:
                 if self.with_pseudo_depth:
-                    imgs, intrinsics = self.train_transform(
+                    imgs, intrinsics = data_transform(
                         [tgt_img, tgt_pseudo_depth] + ref_imgs,
                         np.copy(sample["intrinsics"]),
                     )
@@ -142,7 +150,7 @@ class Dataset(base_dataset):
                     tgt_pseudo_depth = imgs[1]
                     ref_imgs = imgs[2:]
                 else:
-                    imgs, intrinsics = self.train_transform(
+                    imgs, intrinsics = data_transform(
                         [tgt_img] + ref_imgs, np.copy(sample["intrinsics"])
                     )
                     tgt_img = imgs[0]
@@ -204,7 +212,7 @@ class Dataset(base_dataset):
 
         self.samples = sequence_set
 
-    def _crawl_vali_folders(folders_list, dataset="nyu"):
+    def _crawl_vali_folders(self, folders_list, dataset="nyu"):
         imgs = []
         depths = []
         for folder in folders_list:
@@ -217,7 +225,7 @@ class Dataset(base_dataset):
             depths.extend(current_depth)
         return imgs, depths
 
-    def _load_sparse_depth(filename):
+    def _load_sparse_depth(self, filename):
         sparse_depth = sparse.load_npz(filename)
         depth = sparse_depth.todense()
         return np.array(depth)

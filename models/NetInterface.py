@@ -30,7 +30,7 @@ class NetInterface(object):
     """
 
     @classmethod
-    def add_argument(cla, parser):
+    def add_arguments(cla, parser):
         unique_params = set()
         return parser, unique_params
 
@@ -52,7 +52,7 @@ class NetInterface(object):
         self._logger = logger
 
         self.opt = opt
-        self.full_dir = opt.full_dir
+        self.full_logdir = opt.full_logdir
         self._nets = []
         self._moveable_vars = []
         self._optimizers = []
@@ -231,7 +231,7 @@ class NetInterface(object):
 
             self.train()  # Set Net to train mode
             logger.train()
-            logger.on_epoch_begin()
+            logger.on_epoch_begin(epoch)
 
             end = time.time()
             for i, data in enumerate(dataloader):
