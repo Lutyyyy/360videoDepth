@@ -141,6 +141,8 @@ class Model(NetInterface):
             errs = {
                 "abs_diff": errs[0],
                 "abs_rel": errs[1],
+                "rmse": errs[4],
+                "rmse_log": errs[5],
                 "a1": errs[6],
                 "a2": errs[7],
                 "a3": errs[8],
@@ -156,7 +158,11 @@ class Model(NetInterface):
                 pred["poses_inv"],
                 self.opt,
             )
-            errs = {"photo_loss": loss_1.item(), "geometry_loss": loss_2.item()}
+            errs = {
+                "photo_loss": loss_1.item(),
+                "geometry_loss": loss_2.item(),
+                "loss": (loss_1 + loss_2).item(),
+            }
         else:
             raise NotImplementedError(
                 f"validation mode {self.opt.val_mod} not supported"
@@ -233,9 +239,7 @@ class Model(NetInterface):
                     self.pose_net(im, self._input.tgt_img)
                     for im in self._input.ref_imgs
                 ],
-                "tgt_normal": depth_to_normals(
-                    target_depth, self._input.intrinsics
-                ),
+                "tgt_normal": depth_to_normals(target_depth, self._input.intrinsics),
                 "tgt_pseudo_normal": depth_to_normals(
                     self._input.tgt_pseudo_depth, self._input.intrinsics
                 ),
@@ -280,3 +284,4 @@ class Model(NetInterface):
         if not hasattr(self, "outdir"):
             self.outdir = outdir
         os.makedirs(outdir, exist_ok=True)
+        # TODO
