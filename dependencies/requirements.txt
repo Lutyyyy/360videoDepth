@@ -1,0 +1,8 @@
+imageio==2.31.3
+kornia==0.7.0
+numpy==1.22.4
+opencv_python==4.8.0.76
+pandas==2.0.3
+scipy==1.11.2
+torch==1.11.0
+torchvision==0.12.0+cu113

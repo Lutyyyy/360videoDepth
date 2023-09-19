@@ -1,3 +1,5 @@
+# For reference
+
 import torch
 import torchvision.transforms.functional as TF
 
@@ -36,7 +38,7 @@ def merge_fisheye_images(left_image, right_image):
 
 
 if __name__ == "__main__":
-    # Assuming you have two fisheye images in PIL format: left_image and right_image
+    # Assuming have two fisheye images in PIL format: left_image and right_image
     merged_image = merge_fisheye_images(left_image, right_image)
 
     # Save the merged image

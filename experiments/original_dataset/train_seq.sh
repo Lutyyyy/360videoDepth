@@ -9,24 +9,25 @@ shift
 set -e
 cmd="
 python train.py \
+    --manual_seed 42 \
     --net SCDepthV3 \
     --resnet_layers 18 \
     --dataset tum \
     --skip_frames 10 \
     --pose_lr_mul 1 \
-    --log_time \
     --epoch 100 \
     --batch_size 16 \
-    --html_logger \
     --lr 1e-4 \
     --optim adam \
-    --tensorboard \
     --gpu "$gpu" \
+    --tensorboard \
     --save_net 1 \
+    --log_time \
+    --html_logger \
     --workers 4 \
     --repeat 1 \
     --logdir './checkpoints/tum/sequence/' \
-    --suffix 'pose_lr_mul_{pose_lr_mul}_repeat_{repeat}' \
+    --suffix 'pose_lr_mul_{pose_lr_mul}_repeat_{repeat}_manual-seed_{manual_seed}' \
     --force_overwrite \
     $*"
 echo $cmd
