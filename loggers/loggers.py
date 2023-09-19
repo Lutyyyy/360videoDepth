@@ -282,7 +282,7 @@ class ModelSaveLogger(BaseLogger):
             if self.save_best:
                 if self.loss_name not in epoch_log:
                     print(
-                        str_warning, 'Loss name %s not found in batch_log. "Best model saving" is turned off"' % self.loss_name)
+                        str_warning, 'Loss name:["%s"] not found in batch_log. "Best model saving" is turned off"' % self.loss_name)
                 else:
                     current_eval = epoch_log['loss']
                     if self.current_best_eval is None or current_eval < self.current_best_eval:

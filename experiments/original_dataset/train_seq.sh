@@ -24,7 +24,7 @@ python train.py \
     --save_net 1 \
     --log_time \
     --html_logger \
-    --workers 4 \
+    --workers 7 \
     --repeat 1 \
     --logdir './checkpoints/tum/sequence/' \
     --suffix 'pose_lr_mul_{pose_lr_mul}_repeat_{repeat}_manual-seed_{manual_seed}' \

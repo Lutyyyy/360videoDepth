@@ -89,10 +89,11 @@ class Dataset(base_dataset):
                 )
 
     def __len__(self):
-        if self.mode != "train" and self.opt.val_mode == "depth":
-            return len(self.imgs)
-        else:
+        if self.mode == "train":
             return len(self.samples) * self.opt.repeat
+        elif self.mode == "vali" and self.opt.val_mode == "depth":
+            return len(self.imgs)
+        return len(self.samples)
 
     def __getitem__(self, index):
         sample_loaded = {}

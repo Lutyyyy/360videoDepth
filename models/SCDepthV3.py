@@ -93,7 +93,14 @@ class Model(NetInterface):
             "normal_l1_loss",
             "mask_ranking_loss",
             "normal_ranking_loss",
-        ]
+            "abs_diff",
+            "abs_rel",
+            "rmse",
+            "rmse_log",
+            "a1",
+            "a2",
+            "a3",
+        ]  # training and validation metrics for logger
 
         self.init_vars(add_path=False)
 
