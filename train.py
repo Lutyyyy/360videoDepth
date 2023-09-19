@@ -216,11 +216,11 @@ def main_worker(local_rank, ngpus, opt):
             logger_list.append(tensorboard_logger)
         logger = loggers.ComposeLogger(logger_list)
 
-    if opt.html_logger:
-        html_summary_filepath = os.path.join(opt.full_logdir, "summary")
-        html_logger = loggers.HtmlLogger(html_summary_filepath)
-        logger_list.append(html_logger)
-    elif global_rank:
+        if opt.html_logger:
+            html_summary_filepath = os.path.join(opt.full_logdir, "summary")
+            html_logger = loggers.HtmlLogger(html_summary_filepath)
+            logger_list.append(html_logger)
+    else:
         # other procs do no log.
         logger = loggers.ComposeLogger([loggers.TerminateOnNaN()])
 

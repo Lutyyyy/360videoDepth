@@ -87,6 +87,9 @@ class Model(NetInterface):
         )
         self._optimizers = [self.optimizer_depth, self.optimizer_pose]
         self._metrics = [
+            "batch",
+            "data_time",
+            "batch_time",
             "total_loss",
             "photo_loss",
             "geometry_loss",
@@ -291,4 +294,9 @@ class Model(NetInterface):
         if not hasattr(self, "outdir"):
             self.outdir = outdir
         os.makedirs(outdir, exist_ok=True)
-        # TODO
+        # TODO vitualization
+        # TODO save result
+
+    def on_test_end(self):
+        # TODO make test video
+        pass
