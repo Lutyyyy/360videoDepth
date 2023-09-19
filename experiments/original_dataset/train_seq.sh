@@ -16,7 +16,7 @@ python train.py \
     --pose_lr_mul 1 \
     --log_time \
     --epoch 100 \
-    --batch_size 8 \
+    --batch_size 16 \
     --html_logger \
     --lr 1e-4 \
     --optim adam \

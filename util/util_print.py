@@ -4,7 +4,7 @@ class Bcolors:
         self.OKBLUE = "\033[94m"
         self.OKGREEN = "\033[92m"
         self.WARNING = "\033[93m"
-        self.DEBUG = "\033[97m"
+        self.DEBUG = "\033[96m"
         self.FAIL = "\033[91m"
         self.ENDC = "\033[0m"
 

@@ -36,6 +36,16 @@ class Model(NetInterface):
         parser.add_argument('--normal_rank_weight', type=float, default=0.1,
                             help='edge-guided sampling for normal ranking loss')
         
+        # for ablation study
+        parser.add_argument('--no_ssim', action='store_true',
+                            help='use ssim in photometric loss')
+        parser.add_argument('--no_auto_mask', action='store_true',
+                            help='masking invalid static points')
+        parser.add_argument('--no_dynamic_mask',
+                            action='store_true', help='masking dynamic regions')
+        parser.add_argument('--no_min_optimize', action='store_true',
+                            help='optimize the minimum loss')
+            
         return parser, set()
 
     def __init__(self, opt, logger):
@@ -47,6 +57,7 @@ class Model(NetInterface):
             "ref_imgs",
             "intrinsics",
             "gt_depth",
+            "tgt_pseudo_depth",
         ]  # TODO
         self.gt_names = []
         self.requires = list(set().union(self.input_names, self.gt_names))
@@ -102,7 +113,8 @@ class Model(NetInterface):
         loss.backward()
 
         for k, v in pred.items():
-            pred[k] = v.data.cpu().numpy()
+            if torch.is_tensor(v):
+                pred[k] = v.data.cpu().numpy()
 
         for optimizer in self._optimizers:
             optimizer.step()
@@ -165,21 +177,21 @@ class Model(NetInterface):
             pred["ref_depths"],
             self._input.intrinsics,
             pred["poses"],
-            pred["pose_inv"],
+            pred["poses_inv"],
             self.opt,
         )
 
-        normal_l1_loss = (pred["tgt_noraml"] - pred["tgt_pseudo_noraml"]).abs().mean()
+        normal_l1_loss = (pred["tgt_normal"] - pred["tgt_pseudo_normal"]).abs().mean()
 
         mask_ranking_loss = LossF.mask_ranking_loss(
-            pred["tgt_depth"], pred["tgt_pseudo_depth"], dynamic_mask
+            pred["tgt_depth"], self._input.tgt_pseudo_depth, dynamic_mask
         )
 
         normal_ranking_loss = LossF.normal_ranking_loss(
-            pred["tgt_pseudo_depth"],
+            self._input.tgt_pseudo_depth,
             self._input.tgt_img,
-            pred["tgt_noraml"],
-            pred["tgt_pseudo_noraml"],
+            pred["tgt_normal"],
+            pred["tgt_pseudo_normal"],
         )
 
         w1 = self.opt.photo_weight
@@ -197,20 +209,21 @@ class Model(NetInterface):
         )
 
         loss_data = {
-            "total_loss": total_loss,
-            "photo_loss": photo_loss,
-            "geometry_loss": geometry_loss,
-            "normal_l1_loss": normal_l1_loss,
-            "mask_ranking_loss": mask_ranking_loss,
-            "normal_ranking_loss": normal_ranking_loss,
+            "total_loss": total_loss.item(),
+            "photo_loss": photo_loss.item(),
+            "geometry_loss": geometry_loss.item(),
+            "normal_l1_loss": normal_l1_loss.item(),
+            "mask_ranking_loss": mask_ranking_loss.item(),
+            "normal_ranking_loss": normal_ranking_loss.item(),
         }
 
         return total_loss, loss_data
 
     def _predict_on_batch(self, is_train=True):
         if is_train:
+            target_depth = self.depth_net(self._input.tgt_img)
             result = {
-                "tgt_depth": self.depth_net(self._input.tgt_img),
+                "tgt_depth": target_depth,
                 "ref_depths": [self.depth_net(im) for im in self._input.ref_imgs],
                 "poses": [
                     self.pose_net(self._input.tgt_img, im)
@@ -221,7 +234,7 @@ class Model(NetInterface):
                     for im in self._input.ref_imgs
                 ],
                 "tgt_normal": depth_to_normals(
-                    self._input.tgt_depth, self._input.intrinsics
+                    target_depth, self._input.intrinsics
                 ),
                 "tgt_pseudo_normal": depth_to_normals(
                     self._input.tgt_pseudo_depth, self._input.intrinsics

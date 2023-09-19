@@ -10,6 +10,7 @@ from .normal_ranking_loss import EdgeguidedNormalRankingLoss
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
+from util.util_print import str_debug
 
 class SSIM(nn.Module):
     """Layer to compute the SSIM loss between a pair of images
@@ -93,7 +94,7 @@ def photo_and_geometry_loss(tgt_img, ref_imgs, tgt_depth, ref_depths, intrinsics
     photo_loss = mean_on_mask(diff_img, valid_mask)
     geometry_loss = mean_on_mask(diff_depth, valid_mask)
 
-    if hparams.model_version == 'v3':
+    if hparams.net == "SCDepthV3":
         # get dynamic mask for tgt image
         dynamic_mask = []
         for i in range(0, len(diff_depth_list), 2):
@@ -187,6 +188,8 @@ def compute_errors(gt, pred, dataset):
     # pred : b c h w
     # gt: b h w
 
+    gt = gt.to(pred.device)
+    
     abs_diff = abs_rel = sq_rel = log10 = rmse = rmse_log = a1 = a2 = a3 = 0.0
 
     batch_size, h, w = gt.size()
