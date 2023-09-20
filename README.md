@@ -10,4 +10,5 @@ Download the preprocessed data from [sc_depth_pl](https://github.com/JiawangBian
 ```shell
 bash ./experiments/davis/train_sequence.sh 0
 ```
-The first argument indicates the GPU id for training. For distributed parallel training, add `--multiprocess_distributed` in `./experiments/original_dataset/train_seq.sh`
+The first argument indicates the GPU id for training. <br>
+For distributed parallel training, add `--multiprocess_distributed` in `./experiments/original_dataset/train_seq.sh`
