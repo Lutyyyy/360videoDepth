@@ -9,6 +9,7 @@ import torch
 from .base_dataset import Dataset as base_dataset
 from . import custom_transforms
 import util
+import configs
 
 
 class Dataset(base_dataset):
@@ -30,9 +31,7 @@ class Dataset(base_dataset):
         self.mode = mode
         assert mode in ("train", "vali")
 
-        data_root = os.path.join(
-            os.path.dirname(util.project_path), "autodl-tmp/datafiles/original_dataset"
-        )
+        data_root = configs.dataset_root
 
         self.img_resize = []
         if opt.dataset == "kitti":
