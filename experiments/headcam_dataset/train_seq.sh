@@ -12,7 +12,7 @@ python train.py \
     --manual_seed 42 \
     --net SCDepthV3 \
     --resnet_layers 18 \
-    --dataset tum \
+    --dataset headcam_dataset \
     --use_frame_index \
     --skip_frames 1 \
     --pose_lr_mul 1 \
@@ -27,7 +27,7 @@ python train.py \
     --html_logger \
     --workers 7 \
     --repeat 1 \
-    --logdir './checkpoints/tum/sequence/' \
+    --logdir './checkpoints/headcam/sequence/' \
     --suffix 'pose_lr_mul_{pose_lr_mul}_repeat_{repeat}_manual-seed_{manual_seed}' \
     --force_overwrite \
     $*"

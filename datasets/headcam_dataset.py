@@ -1,6 +1,9 @@
 from path import Path
 import os
 import numpy as np
+from imageio import imread
+
+import torch
 
 from base_dataset import Dataset as base_dataset
 import configs
@@ -55,7 +58,7 @@ class Dataset(base_dataset):
                 self.data_path / folder[:-1] for folder in open(scene_list_path)
             ]
             self.k = opt.skip_frames
-            # self.use_frame_index = opt.use_frame_index
+            self.use_frame_index = opt.use_frame_index
             self.with_pseudo_depth = False  # if V3 else False
             self._crawl_train_folders(opt.sequence_length)
         else:
@@ -82,10 +85,63 @@ class Dataset(base_dataset):
                 )
 
     def __len__(self):
-        pass
+        if self.mode == "train":
+            return len(self.samples) * self.opt.repeat
+        elif self.mode == "vali" and self.opt.val_mode == "depth":
+            return len(self.imgs)
+        return len(self.samples)
 
     def __getitem__(self, index):
-        pass
+        sample_loaded = {}
+        if self.mode == "vali" and self.opt.val_mode == "depth":
+            raise NotImplementedError()
+        else:
+            sample = self.samples[index]
+            tgt_img = imread(sample["tgt_img"]).astype(np.float32)
+            ref_imgs = [
+                imread(ref_img).astype(np.float32) for ref_img in sample["ref_imgs"]
+            ]
+
+            if self.mode == "train":
+                data_transform = self.train_transform
+            elif self.mode == "vali" and self.opt.val_mode == "photo":
+                data_transform = self.valid_transform
+            else:
+                raise NotImplemented(f"Unknown transformation")
+
+            if self.with_pseudo_depth:
+                tgt_pseudo_depth = imread(sample["tgt_pseudo_depth"]).astype(np.float32)
+
+            if data_transform is not None:
+                if self.with_pseudo_depth:
+                    imgs, intrinsics = data_transform(
+                        [tgt_img, tgt_pseudo_depth] + ref_imgs,
+                        np.copy(sample["intrinsics"]),
+                    )
+                    tgt_img = imgs[0]
+                    tgt_pseudo_depth = imgs[1]
+                    ref_imgs = imgs[2:]
+                else:
+                    imgs, intrinsics = data_transform(
+                        [tgt_img] + ref_imgs, np.copy(sample["intrinsics"])
+                    )
+                    tgt_img = imgs[0]
+                    ref_imgs = imgs[1:]
+            else:
+                intrinsics = np.copy(sample["intrinsics"])
+
+            sample_loaded = {
+                "tgt_img": tgt_img,
+                "ref_imgs": ref_imgs,
+                "intrinsics": intrinsics,
+            }
+
+            if self.with_pseudo_depth:
+                sample_loaded.update({"tgt_pseudo_depth": tgt_pseudo_depth})
+
+        self.convert_to_torch(sample_loaded)
+
+        return sample_loaded
 
     def _crawl_train_folders(self, sequence_length):
         sequence_set = []
@@ -127,7 +183,7 @@ class Dataset(base_dataset):
         self.samples = sequence_set
     
     def _crawl_vali_folders(self, folders_list, dataset):
-        pass
+        raise NotImplementedError()
 
 
 def _generate_sample_index(num_frames, skip_frames, sequence_length):
