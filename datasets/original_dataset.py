@@ -83,6 +83,7 @@ class Dataset(base_dataset):
                 self.with_pseudo_depth = False
                 self._crawl_train_folders(opt.sequence_length)
             else:
+                # val_mode == "depth"
                 self.imgs, self.depth = self._crawl_vali_folders(
                     self.scenes, opt.dataset
                 )
