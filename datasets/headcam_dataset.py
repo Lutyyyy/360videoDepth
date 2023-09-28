@@ -1,5 +1,6 @@
 from path import Path
 import os
+import numpy as np
 
 from base_dataset import Dataset as base_dataset
 import configs
@@ -25,17 +26,17 @@ class Dataset(base_dataset):
                             help='number of images for training')
         parser.add_argument('--skip_frames', type=int, default=1,
                             help='jump sampling from video')
-        # parser.add_argument('--use_frame_index', action='store_true',
-        #                     help='filter out static-camera frames in video')  # already done by SfM
+        parser.add_argument('--use_frame_index', action='store_true',
+                            help='filter out static-camera frames in video')  # already done by SfM
         return parser, set()
 
     def __init__(self, opt, mode="train"):
         super().__init__(opt, mode)
         self.mode = mode
-        assert mode in ('train', 'vali')
-        
+        assert mode in ("train", "vali")
+
         data_root = configs.dataset_root
-        
+
         self.img_resize = [opt.img_height, opt.img_width]
 
         if mode == "train":
@@ -48,9 +49,11 @@ class Dataset(base_dataset):
                     custom_transforms.Normalize(),
                 ]
             )
-            # self.data_path = Path(data_root) / f"{opt.dataset}" / "training"
-            # scene_list_path = self.data_path / "train.txt"
-            self.scenes = [os.listdir(data_root)]
+            self.data_path = Path(data_root) / "training"
+            scene_list_path = self.data_path / "train.txt"
+            self.scenes = [
+                self.data_path / folder[:-1] for folder in open(scene_list_path)
+            ]
             self.k = opt.skip_frames
             # self.use_frame_index = opt.use_frame_index
             self.with_pseudo_depth = False  # if V3 else False
@@ -63,7 +66,7 @@ class Dataset(base_dataset):
                     custom_transforms.Normalize(),
                 ]
             )
-            self.data_path = Path(data_root) / f"{opt.dataset}" / "training"
+            self.data_path = Path(data_root) / "training"
             scene_list_path = self.data_path / "val.txt"
             self.scenes = [
                 self.data_path / folder[:-1] for folder in open(scene_list_path)
@@ -77,13 +80,68 @@ class Dataset(base_dataset):
                 self.imgs, self.depth = self._crawl_vali_folders(
                     self.scenes, opt.dataset
                 )
-                
+
     def __len__(self):
         pass
-    
+
     def __getitem__(self, index):
         pass
-    
+
     def _crawl_train_folders(self, sequence_length):
-        imgs = sorted()
+        sequence_set = []
+        for scene in self.scenes:
+            imgs = sorted(scene.files("*.png"))
+            intrinsics = (
+                np.genfromtxt(scene / "cam.txt").astype(np.float32).reshape(3, 3)
+            )
+
+            if self.use_frame_index:
+                frame_index = [int(index) for index in open(scene / "frame_index.txt")]
+                imgs = [imgs[d] for d in frame_index]
+
+            if self.with_pseudo_depth:
+                pseudo_depths = sorted((scene / "leres_depth").files("*.png"))
+                if self.use_frame_index:
+                    pseudo_depths = [pseudo_depths[d] for d in frame_index]
+
+            if len(imgs) < sequence_length:
+                continue
+
+            sample_index_list = _generate_sample_index(
+                len(imgs), self.k, sequence_length
+            )
+
+            for sample_index in sample_index_list:
+                sample = {
+                    "intrinsics": intrinsics,
+                    "tgt_img": imgs[sample_index["tgt_idx"]],
+                }
+                if self.with_pseudo_depth:
+                    sample["tgt_pseudo_depth"] = pseudo_depths[sample_index["tgt_idx"]]
+
+                sample["ref_imgs"] = []
+                for j in sample_index["ref_idx"]:
+                    sample["ref_imgs"].append(imgs[j])
+                sequence_set.append(sample)
+
+        self.samples = sequence_set
+    
+    def _crawl_vali_folders(self, folders_list, dataset):
         pass
+
+
+def _generate_sample_index(num_frames, skip_frames, sequence_length):
+    sample_index_list = []
+    k = skip_frames
+    demi_length = (sequence_length - 1) // 2
+    shifts = list(range(-demi_length * k, demi_length * k + 1, k))
+    shifts.pop(demi_length)
+
+    if num_frames > sequence_length:
+        for i in range(demi_length * k, num_frames - demi_length * k):
+            sample_index = {"tgt_idx": i, "ref_idx": []}
+            for j in shifts:
+                sample_index["ref_idx"].append(i + j)
+            sample_index_list.append(sample_index)
+
+    return sample_index_list
