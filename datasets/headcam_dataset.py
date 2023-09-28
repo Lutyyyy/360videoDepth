@@ -5,7 +5,7 @@ from imageio import imread
 
 import torch
 
-from base_dataset import Dataset as base_dataset
+from .base_dataset import Dataset as base_dataset
 import configs
 from . import custom_transforms
 
@@ -13,10 +13,8 @@ from . import custom_transforms
 class Dataset(base_dataset):
     @classmethod
     def add_arguments(cls, parser):
-        parser.add_argument("--dump_root", type=str, required=True,
-                    help="Where to dump the data")
-        parser.add_argument("--seq_length", type=int, required=True,
-                            help="Length of each training sequence")
+        parser.add_argument('--sequence_length', type=int, default=3,
+                            help='number of images for training')
         parser.add_argument("--img_height", type=int, default=512,
                             help="Image height")
         parser.add_argument("--img_width", type=int, default=2048,
@@ -25,8 +23,8 @@ class Dataset(base_dataset):
         parser.add_argument("--val_frac", type=float, default=0.1,
                             help="Fraction of data to use for validation")
 
-        parser.add_argument('--sequence_length', type=int, default=3,
-                            help='number of images for training')
+        parser.add_argument('--repeat', type=int, default=1,
+                            help='number of repeatition')
         parser.add_argument('--skip_frames', type=int, default=1,
                             help='jump sampling from video')
         parser.add_argument('--use_frame_index', action='store_true',
@@ -55,7 +53,7 @@ class Dataset(base_dataset):
             self.data_path = Path(data_root) / "training"
             scene_list_path = self.data_path / "train.txt"
             self.scenes = [
-                self.data_path / folder[:-1] for folder in open(scene_list_path)
+                self.data_path / folder for folder in open(scene_list_path)
             ]
             self.k = opt.skip_frames
             self.use_frame_index = opt.use_frame_index
@@ -72,7 +70,7 @@ class Dataset(base_dataset):
             self.data_path = Path(data_root) / "training"
             scene_list_path = self.data_path / "val.txt"
             self.scenes = [
-                self.data_path / folder[:-1] for folder in open(scene_list_path)
+                self.data_path / folder for folder in open(scene_list_path)
             ]
             if self.opt.val_mode == "photo":
                 self.k = opt.skip_frames
