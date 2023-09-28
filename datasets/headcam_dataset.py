@@ -27,7 +27,7 @@ class Dataset(base_dataset):
                             help='number of repeatition')
         parser.add_argument('--skip_frames', type=int, default=1,
                             help='jump sampling from video')
-        parser.add_argument('--use_frame_index', action='store_true',
+        parser.add_argument('--exclude_frame_index', action='store_true',
                             help='filter out static-camera frames in video')  # already done by SfM
         return parser, set()
 
@@ -56,7 +56,7 @@ class Dataset(base_dataset):
                 self.data_path / folder for folder in open(scene_list_path)
             ]
             self.k = opt.skip_frames
-            self.use_frame_index = opt.use_frame_index
+            self.exclude_frame_index = opt.exclude_frame_index
             self.with_pseudo_depth = False  # if V3 else False
             self._crawl_train_folders(opt.sequence_length)
         else:
@@ -74,7 +74,7 @@ class Dataset(base_dataset):
             ]
             if self.opt.val_mode == "photo":
                 self.k = opt.skip_frames
-                self.use_frame_index = opt.use_frame_index
+                self.exclude_frame_index = opt.exclude_frame_index
                 self.with_pseudo_depth = False
                 self._crawl_train_folders(opt.sequence_length)
             else:
@@ -149,14 +149,14 @@ class Dataset(base_dataset):
                 np.genfromtxt(scene / "cam.txt").astype(np.float32).reshape(3, 3)
             )
 
-            if self.use_frame_index:
-                frame_index = [int(index) for index in open(scene / "frame_index.txt")]
-                imgs = [imgs[d] for d in frame_index]
+            if self.exclude_frame_index:
+                exclude_frame_index = [int(index) for index in open(scene / "exclude_frame_index.txt")]
+                imgs = [x for x in imgs if x not in exclude_frame_index]
 
             if self.with_pseudo_depth:
                 pseudo_depths = sorted((scene / "leres_depth").files("*.png"))
-                if self.use_frame_index:
-                    pseudo_depths = [pseudo_depths[d] for d in frame_index]
+                if self.exclude_frame_index:
+                    pseudo_depths = [pseudo_depths[d] for d in range(len(pseudo_depths)) if (d + 1) not in exclude_frame_index]
 
             if len(imgs) < sequence_length:
                 continue
