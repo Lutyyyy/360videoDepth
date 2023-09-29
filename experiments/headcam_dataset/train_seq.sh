@@ -7,7 +7,6 @@ fi
 gpu="$1"
 shift
 set -e
-    # --use_frame_index \
 cmd="
 python train.py \
     --manual_seed 42 \
@@ -19,6 +18,7 @@ python train.py \
     --epoch 100 \
     --batch_size 16 \
     --lr 1e-4 \
+    --exclude_frame_index \
     --optim adam \
     --gpu "$gpu" \
     --tensorboard \

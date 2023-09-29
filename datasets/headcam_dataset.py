@@ -62,9 +62,7 @@ class Dataset(base_dataset):
             )
             self.data_path = Path(data_root) / "training"
             scene_list_path = self.data_path / "train.txt"
-            self.scenes = [
-                self.data_path / folder for folder in open(scene_list_path)
-            ]
+            self.scenes = [self.data_path / folder for folder in open(scene_list_path)]
             self.k = opt.skip_frames
             self.exclude_frame_index = opt.exclude_frame_index
             self.with_pseudo_depth = True  # if V3 else False
@@ -79,9 +77,7 @@ class Dataset(base_dataset):
             )
             self.data_path = Path(data_root) / "training"
             scene_list_path = self.data_path / "val.txt"
-            self.scenes = [
-                self.data_path / folder for folder in open(scene_list_path)
-            ]
+            self.scenes = [self.data_path / folder for folder in open(scene_list_path)]
             if self.opt.val_mode == "photo":
                 self.k = opt.skip_frames
                 self.exclude_frame_index = opt.exclude_frame_index
@@ -161,13 +157,19 @@ class Dataset(base_dataset):
             )
 
             if self.exclude_frame_index:
-                exclude_frame_index = [int(index) for index in open(scene / "exclude_frame_index.txt")]
+                exclude_frame_index = [
+                    int(index) for index in open(scene / "exclude_frame_index.txt")
+                ]
                 imgs = [x for x in imgs if x not in exclude_frame_index]
 
             if self.with_pseudo_depth:
                 pseudo_depths = sorted((scene / "Depth").files("*.npy"))
                 if self.exclude_frame_index:
-                    pseudo_depths = [pseudo_depths[d] for d in range(len(pseudo_depths)) if (d + 1) not in exclude_frame_index]
+                    pseudo_depths = [
+                        pseudo_depths[d]
+                        for d in range(len(pseudo_depths))
+                        if (d + 1) not in exclude_frame_index
+                    ]
 
             if len(imgs) < sequence_length:
                 continue
@@ -190,7 +192,7 @@ class Dataset(base_dataset):
                 sequence_set.append(sample)
 
         self.samples = sequence_set
-    
+
     def _crawl_vali_folders(self, folders_list, dataset):
         # TODO
         raise NotImplementedError()
