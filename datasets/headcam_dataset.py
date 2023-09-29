@@ -20,8 +20,8 @@ class Dataset(base_dataset):
         parser.add_argument("--img_width", type=int, default=2048,
                             help="Image width")
         # TODO num_threads
-        parser.add_argument("--val_frac", type=float, default=0.1,
-                            help="Fraction of data to use for validation")
+        # parser.add_argument("--val_frac", type=float, default=0.1,
+        #                     help="Fraction of data to use for validation")
 
         parser.add_argument('--repeat', type=int, default=1,
                             help='number of repeatition')
@@ -32,6 +32,16 @@ class Dataset(base_dataset):
         return parser, set()
 
     def __init__(self, opt, mode="train"):
+        """
+        A scene files should be arranged in this way:
+        root/scene1/*.png
+        root/scene1/Depth/*.npy
+        root/scene1/cam.txt
+        root/scene1/exclude_frame_index.txt
+        ..
+        root/scene2/*.png
+        .
+        """
         super().__init__(opt, mode)
         self.mode = mode
         assert mode in ("train", "vali")
@@ -57,7 +67,7 @@ class Dataset(base_dataset):
             ]
             self.k = opt.skip_frames
             self.exclude_frame_index = opt.exclude_frame_index
-            self.with_pseudo_depth = False  # if V3 else False
+            self.with_pseudo_depth = True  # if V3 else False
             self._crawl_train_folders(opt.sequence_length)
         else:
             self.valid_transform = custom_transforms.Compose(
@@ -92,6 +102,7 @@ class Dataset(base_dataset):
     def __getitem__(self, index):
         sample_loaded = {}
         if self.mode == "vali" and self.opt.val_mode == "depth":
+            # TODO
             raise NotImplementedError()
         else:
             sample = self.samples[index]
@@ -108,7 +119,7 @@ class Dataset(base_dataset):
                 raise NotImplemented(f"Unknown transformation")
 
             if self.with_pseudo_depth:
-                tgt_pseudo_depth = imread(sample["tgt_pseudo_depth"]).astype(np.float32)
+                tgt_pseudo_depth = np.load(sample["tgt_pseudo_depth"]).astype(np.float32)
 
             if data_transform is not None:
                 if self.with_pseudo_depth:
@@ -154,7 +165,7 @@ class Dataset(base_dataset):
                 imgs = [x for x in imgs if x not in exclude_frame_index]
 
             if self.with_pseudo_depth:
-                pseudo_depths = sorted((scene / "leres_depth").files("*.png"))
+                pseudo_depths = sorted((scene / "Depth").files("*.npy"))
                 if self.exclude_frame_index:
                     pseudo_depths = [pseudo_depths[d] for d in range(len(pseudo_depths)) if (d + 1) not in exclude_frame_index]
 
@@ -181,6 +192,7 @@ class Dataset(base_dataset):
         self.samples = sequence_set
     
     def _crawl_vali_folders(self, folders_list, dataset):
+        # TODO
         raise NotImplementedError()
 
 

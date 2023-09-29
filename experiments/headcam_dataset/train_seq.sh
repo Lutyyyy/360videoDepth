@@ -27,7 +27,6 @@ python train.py \
     --html_logger \
     --workers 7 \
     --repeat 1 \
-    -- val_mode photo \
     --logdir './checkpoints/headcam/sequence/' \
     --suffix 'pose_lr_mul_{pose_lr_mul}_repeat_{repeat}_manual-seed_{manual_seed}' \
     --force_overwrite \
