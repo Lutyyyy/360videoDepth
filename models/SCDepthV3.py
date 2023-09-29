@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 import torch
 from kornia.geometry.depth import depth_to_normals
@@ -7,6 +8,7 @@ from models.NetInterface import NetInterface
 from networks.DepthNet import DepthNet
 from networks.PoseNet import PoseNet
 import losses.loss_functions as LossF
+from visualize.html_visualizer import HTMLVisualizer as Visualizer
 
 
 class Model(NetInterface):
@@ -106,6 +108,7 @@ class Model(NetInterface):
         ]  # training and validation metrics for logger
 
         self.init_vars(add_path=False)
+        self.visualizer = Visualizer(logger.get_html_logger(), n_workers=4)
 
     def _train_on_batch(self, epoch, batch_idx, batch):
         for n in self._nets:
@@ -130,6 +133,27 @@ class Model(NetInterface):
             optimizer.step()
 
         # TODO virtualization
+        if np.mod(epoch, self.opt.vis_every_train) == 0:
+            idx = (
+                batch_idx
+                if self.opt.vis_at_start
+                else self.opt.epoch_batches - batch_idx
+            )
+            if idx <= self.opt.vis_batches_train:
+                # specify vis how many times in one epoch
+                outdir = os.path.join(
+                    self.full_logdir, "visualize", "epoch%04d_train" % epoch
+                )
+                os.makedirs(outdir, exist_ok=True)
+                output = self.pack_output(pred, batch)
+                if self.global_rank == 0 and self.visualizer:
+                    self.visualizer.visualize(output, idx + (1000 * epoch), outdir)
+                np.savez(
+                    os.path.join(
+                        outdir, "rank%04d_batch%04d" % (self.global_rank, batch_idx)
+                    ),
+                    **output,
+                )
 
         batch_log = {"size": self.opt.batch_size, "loss": loss.item(), **loss_data}
 
@@ -179,6 +203,16 @@ class Model(NetInterface):
             )
 
         # TODO vitualization
+        if np.mod(epoch, self.opt.vis_every_vali) == 0:
+            if batch_idx < self.opt.vis_batches_vali:
+                for k, v in pred.items():
+                    pred[k] = v.cpu().numpy()
+                outdir = os.path.join(self.full_logdir, "visualize", "epoch%04d_vali" % epoch)
+                os.makedirs(outdir, exist_ok=True)
+                output = self.pack_output(pred, batch)
+                if self.global_rank == 0 and self.visualizer:
+                    self.visualizer.visualize(output, batch_idx + (1000 * epoch), outdir)
+                np.savez(os.path.join(outdir, "rank%04d_batch%04d" % (self.global_rank, batch_idx)), **output)
 
         batch_size = batch["tgt_img"].shape[0]
         batch_log = {"size": batch_size, **errs}

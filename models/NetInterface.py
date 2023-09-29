@@ -382,6 +382,16 @@ class NetInterface(object):
         }
         return additional_values
 
+    def pack_output(self, pred, batch):
+        output = {"batch_size": len(pred["tgt_img"])}
+
+        for k, v in pred.items():
+            if torch.is_tensor(v):
+                v = v.cpu().numpy()
+            output.update({k: v})
+
+        return output
+
 
 def _get_num_samples(dataloader):
     # import torch.utils.data.sampler as samplers

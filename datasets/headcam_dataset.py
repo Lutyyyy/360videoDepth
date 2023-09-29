@@ -106,7 +106,8 @@ class Dataset(base_dataset):
         if self.mode == "vali" and self.opt.val_mode == "depth":
             img = imread(self.imgs[index]).astype(np.float32)
             depth = np.load(self.depth[index]).astype(np.float32)
-            depth = torch.from_numpy(depth / np.max(depth)).float()  # Normalization to [0, 1]
+            # TODO
+            depth = torch.from_numpy(depth / np.max(depth) * 10.).float()  # Normalization to [0, 10]
 
             if self.valid_transform is not None:
                 img, _ = self.valid_transform([img], None)
@@ -129,7 +130,8 @@ class Dataset(base_dataset):
 
             if self.with_pseudo_depth:
                 tgt_pseudo_depth = np.load(sample["tgt_pseudo_depth"]).astype(np.float32)
-                tgt_pseudo_depth /= np.max(tgt_pseudo_depth)  # Normalization
+                # TODO
+                tgt_pseudo_depth = tgt_pseudo_depth / np.max(tgt_pseudo_depth)  * 6000 # Normalization
 
             if data_transform is not None:
                 if self.with_pseudo_depth:
