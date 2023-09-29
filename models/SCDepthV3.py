@@ -64,17 +64,6 @@ class Model(NetInterface):
         self.gt_names = []
         self.requires = list(set().union(self.input_names, self.gt_names))
 
-        img_resize = list()
-        if opt.dataset == "kitti":
-            img_resize = [256, 832]
-        elif opt.dataset == "ddad":
-            img_resize = [384, 640]
-        elif opt.dataset in ["nyu", "tum", "bonn"]:
-            img_resize = [256, 320]
-        else:
-            # TODO
-            img_resize = [None, None]
-
         self.depth_net = DepthNet(opt.resnet_layers, opt.ImageNet_pretrained)
         self.pose_net = PoseNet()
         self._nets = [self.depth_net, self.pose_net]
@@ -146,8 +135,8 @@ class Model(NetInterface):
                 )
                 os.makedirs(outdir, exist_ok=True)
                 output = self.pack_output(pred, batch)
-                if self.global_rank == 0 and self.visualizer:
-                    self.visualizer.visualize(output, idx + (1000 * epoch), outdir)
+                # if self.global_rank == 0 and self.visualizer:
+                #     self.visualizer.visualize(output, idx + (1000 * epoch), outdir)
                 np.savez(
                     os.path.join(
                         outdir, "rank%04d_batch%04d" % (self.global_rank, batch_idx)
@@ -210,8 +199,8 @@ class Model(NetInterface):
                 outdir = os.path.join(self.full_logdir, "visualize", "epoch%04d_vali" % epoch)
                 os.makedirs(outdir, exist_ok=True)
                 output = self.pack_output(pred, batch)
-                if self.global_rank == 0 and self.visualizer:
-                    self.visualizer.visualize(output, batch_idx + (1000 * epoch), outdir)
+                # if self.global_rank == 0 and self.visualizer:
+                #     self.visualizer.visualize(output, batch_idx + (1000 * epoch), outdir)
                 np.savez(os.path.join(outdir, "rank%04d_batch%04d" % (self.global_rank, batch_idx)), **output)
 
         batch_size = batch["tgt_img"].shape[0]
