@@ -227,6 +227,10 @@ class Dataset(base_dataset):
         return imgs, depths
 
     def _load_sparse_depth(self, filename):
+        """
+        Convert this SparseArray array to a dense numpy.ndarray. 
+        Note that this may take a large amount of memory and time.
+        """
         sparse_depth = sparse.load_npz(filename)
         depth = sparse_depth.todense()
         return np.array(depth)

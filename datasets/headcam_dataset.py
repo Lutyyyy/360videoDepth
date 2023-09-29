@@ -43,12 +43,18 @@ class Dataset(base_dataset):
         .
         """
         super().__init__(opt, mode)
+
         self.mode = mode
         assert mode in ("train", "vali")
 
         data_root = configs.dataset_root
 
-        self.img_resize = [opt.img_height, opt.img_width]
+        if opt.dataset == "headcam_dataset":
+            self.img_resize = [opt.img_height, opt.img_width]
+        else:
+            raise NotImplementedError(
+                f"current dataset {opt.dataset} is not in original dataset"
+            )
 
         if mode == "train":
             self.train_transform = custom_transforms.Compose(
@@ -98,8 +104,15 @@ class Dataset(base_dataset):
     def __getitem__(self, index):
         sample_loaded = {}
         if self.mode == "vali" and self.opt.val_mode == "depth":
-            # TODO
-            raise NotImplementedError()
+            img = imread(self.imgs[index]).astype(np.float32)
+            depth = np.load(self.depth[index]).astype(np.float32)
+            depth = torch.from_numpy(depth / np.max(depth)).float()  # Normalization to [0, 1]
+
+            if self.valid_transform is not None:
+                img, _ = self.valid_transform([img], None)
+                img = img[0]
+
+            sample_loaded = {"tgt_img": img, "gt_depth": depth}
         else:
             sample = self.samples[index]
             tgt_img = imread(sample["tgt_img"]).astype(np.float32)
@@ -116,6 +129,7 @@ class Dataset(base_dataset):
 
             if self.with_pseudo_depth:
                 tgt_pseudo_depth = np.load(sample["tgt_pseudo_depth"]).astype(np.float32)
+                tgt_pseudo_depth /= np.max(tgt_pseudo_depth)  # Normalization
 
             if data_transform is not None:
                 if self.with_pseudo_depth:
@@ -194,8 +208,16 @@ class Dataset(base_dataset):
         self.samples = sequence_set
 
     def _crawl_vali_folders(self, folders_list, dataset):
-        # TODO
-        raise NotImplementedError()
+        imgs = []
+        depths = []
+        assert dataset == "headcam_dataset"
+
+        for folder in folders_list:
+            current_imgs = sorted(folder.files("*.png"))
+            current_depth = sorted((folder / "Depth").files("*.npy"))
+            imgs.extend(current_imgs)
+            depths.extend(current_depth)
+        return imgs, depths
 
 
 def _generate_sample_index(num_frames, skip_frames, sequence_length):
