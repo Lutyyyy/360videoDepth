@@ -392,6 +392,8 @@ class NetInterface(object):
             elif isinstance(v, list):
                 val_ = [x.cpu().detach().numpy() for x in v]
                 output.update({k: val_})
+            else:
+                output.update({k: v})
 
         return output
 
