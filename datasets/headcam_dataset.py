@@ -107,7 +107,9 @@ class Dataset(base_dataset):
             img = imread(self.imgs[index]).astype(np.float32)
             depth = np.load(self.depth[index]).astype(np.float32)
             # TODO
-            depth = torch.from_numpy(depth / np.max(depth) * 100.).float()  # Normalization to [0, 10]
+            depth = torch.from_numpy(
+                (depth - np.min(depth)) / (np.max(depth) - np.min(depth)) * 100.0
+            ).float()  # Normalization to [0, 10]
 
             if self.valid_transform is not None:
                 img, _ = self.valid_transform([img], None)
@@ -129,9 +131,13 @@ class Dataset(base_dataset):
                 raise NotImplemented(f"Unknown transformation")
 
             if self.with_pseudo_depth:
-                tgt_pseudo_depth = np.load(sample["tgt_pseudo_depth"]).astype(np.float32)
+                tgt_pseudo_depth = np.load(sample["tgt_pseudo_depth"]).astype(
+                    np.float32
+                )
                 # TODO
-                tgt_pseudo_depth = tgt_pseudo_depth / np.max(tgt_pseudo_depth)  * 6000 # Normalization
+                tgt_pseudo_depth = (
+                    tgt_pseudo_depth / np.max(tgt_pseudo_depth) * 6000
+                )  # Normalization
 
             if data_transform is not None:
                 if self.with_pseudo_depth:
