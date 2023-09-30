@@ -107,7 +107,7 @@ class Dataset(base_dataset):
             img = imread(self.imgs[index]).astype(np.float32)
             depth = np.load(self.depth[index]).astype(np.float32)
             # TODO
-            depth = torch.from_numpy(depth / np.max(depth) * 10.).float()  # Normalization to [0, 10]
+            depth = torch.from_numpy(depth / np.max(depth) * 100.).float()  # Normalization to [0, 10]
 
             if self.valid_transform is not None:
                 img, _ = self.valid_transform([img], None)
