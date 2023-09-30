@@ -194,6 +194,7 @@ class NetInterface(object):
             samples_per_epoch = min(
                 samples_per_epoch, steps_per_epoch * dataloader.batch_sampler.batch_size
             )
+        self.opt.epoch_batches = steps_per_epoch
         if dataloader_vali is not None:
             steps_per_eval = len(dataloader_vali)
             samples_per_eval = _get_num_samples(dataloader_vali)
@@ -383,12 +384,14 @@ class NetInterface(object):
         return additional_values
 
     def pack_output(self, pred, batch):
-        output = {"batch_size": len(pred["tgt_img"])}
+        output = {"batch_size": len(batch["tgt_img"])}
 
         for k, v in pred.items():
             if torch.is_tensor(v):
-                v = v.cpu().numpy()
-            output.update({k: v})
+                output.update({v.cpu().numpy()})
+            elif isinstance(v, list):
+                val_ = [x.cpu().detach().numpy() for x in v]
+                output.update({k: val_})
 
         return output
 
