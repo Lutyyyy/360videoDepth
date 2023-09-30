@@ -160,7 +160,7 @@ class Dataset(base_dataset):
             if self.with_pseudo_depth:
                 sample_loaded.update({"tgt_pseudo_depth": tgt_pseudo_depth})
 
-        self.convert_to_torch(sample_loaded)
+        # self.convert_to_torch(sample_loaded)
 
         return sample_loaded
 
@@ -172,20 +172,22 @@ class Dataset(base_dataset):
                 np.genfromtxt(scene / "cam.txt").astype(np.float32).reshape(3, 3)
             )
 
-            if self.exclude_frame_index:
-                exclude_frame_index = [
-                    int(index) for index in open(scene / "exclude_frame_index.txt")
-                ]
-                imgs = [x for x in imgs if x not in exclude_frame_index]
+            # TODO
+            # if self.exclude_frame_index:
+            #     exclude_frame_index = [
+            #         int(index) for index in open(scene / "exclude_frame_index.txt")
+            #     ]
+            #     imgs = [x for x in imgs if x not in exclude_frame_index]
 
             if self.with_pseudo_depth:
                 pseudo_depths = sorted((scene / "Depth").files("*.npy"))
-                if self.exclude_frame_index:
-                    pseudo_depths = [
-                        pseudo_depths[d]
-                        for d in range(len(pseudo_depths))
-                        if (d + 1) not in exclude_frame_index
-                    ]
+                # TODO
+                # if self.exclude_frame_index:
+                #     pseudo_depths = [
+                #         pseudo_depths[d]
+                #         for d in range(len(pseudo_depths))
+                #         if (d + 1) not in exclude_frame_index
+                #     ]
 
             if len(imgs) < sequence_length:
                 continue

@@ -332,6 +332,7 @@ def main_worker(local_rank, ngpus, opt):
         pin_memory=True,
         drop_last=True,
         collate_fn=collate_fn,
+        prefetch_factor=4,
     )
 
     dataloader_vali = torch.utils.data.DataLoader(
@@ -342,6 +343,7 @@ def main_worker(local_rank, ngpus, opt):
         drop_last=True,
         shuffle=False,
         collate_fn=collate_fn,
+        prefetch_factor=4,
     )
 
     if global_rank == 0:

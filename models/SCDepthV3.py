@@ -8,7 +8,7 @@ from models.NetInterface import NetInterface
 from networks.DepthNet import DepthNet
 from networks.PoseNet import PoseNet
 import losses.loss_functions as LossF
-from visualize.html_visualizer import HTMLVisualizer as Visualizer
+# from visualize.html_visualizer import HTMLVisualizer as Visualizer
 
 
 class Model(NetInterface):
@@ -97,7 +97,7 @@ class Model(NetInterface):
         ]  # training and validation metrics for logger
 
         self.init_vars(add_path=False)
-        self.visualizer = Visualizer(logger.get_html_logger(), n_workers=4)
+        # self.visualizer = Visualizer(logger.get_html_logger(), n_workers=4)
 
     def _train_on_batch(self, epoch, batch_idx, batch):
         for n in self._nets:

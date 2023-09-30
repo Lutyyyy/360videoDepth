@@ -223,7 +223,8 @@ def compute_errors(gt, pred, dataset):
         crop_mask[:, :] = 1
         max_depth = 10
 
-    if dataset == 'tum':
+    if dataset == 'tum' or dataset == 'headcam_dataset':
+        # TODO
         crop_mask = gt[0] != gt[0]
         crop_mask[:, :] = 1
         max_depth = 10
