@@ -1,4 +1,4 @@
 ### Result
 |       epoch        |            video             |             depth             |
 | :----------------: | :--------------------------: | :---------------------------: |
-| epoch40_validation | ![](./video/vali800_input.gif) | ![](video/vali800_output.gif) |
+| epoch40_validation | ![](./video/40_vali800_input.gif) | ![](video/40_vali800_output.gif) |
