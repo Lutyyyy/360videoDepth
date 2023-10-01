@@ -30,7 +30,7 @@ class NetInterface(object):
     """
 
     @classmethod
-    def add_arguments(cla, parser):
+    def add_arguments(cls, parser):
         unique_params = set()
         return parser, unique_params
 

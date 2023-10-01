@@ -28,3 +28,23 @@ def visualize_depth(depth, cmap=cv2.COLORMAP_JET):
     x_ = Image.fromarray(cv2.applyColorMap(x, cmap))
     x_ = torchvision.transforms.ToTensor()(x_)  # (3, H, W)
     return x_
+
+def depth2img(tensor, normalize=True, disparity=True, eps=1e-6, **kargs):
+    t = detach_to_cpu(tensor)
+    assert len(t.shape) == 4
+    assert t.shape[1] == 1
+    t = 1 / (t + eps)
+    # if normalize:
+    max_v = np.max(t, axis=(2, 3), keepdims=True)
+    min_v = np.min(t, axis=(2, 3), keepdims=True)
+    t = (t - min_v) / (max_v - min_v + eps)
+    #    return t
+    # else:
+    #    return t
+    cs = []
+    for b in range(t.shape[0]):
+        c = heatmap_to_pseudo_color(t[b, 0, ...])
+        cs.append(c[None, ...])
+    cs = np.concatenate(cs, axis=0)
+    cs = np.transpose(cs, [0, 3, 1, 2])
+    return cs

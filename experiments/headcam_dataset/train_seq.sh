@@ -25,7 +25,7 @@ python train.py \
     --save_net 1 \
     --log_time \
     --html_logger \
-    --workers 7 \
+    --workers 8 \
     --repeat 1 \
     --logdir './checkpoints/headcam/sequence/' \
     --suffix 'pose_lr_mul_{pose_lr_mul}_repeat_{repeat}_manual-seed_{manual_seed}' \
