@@ -8,6 +8,7 @@ from models.NetInterface import NetInterface
 from networks.DepthNet import DepthNet
 from networks.PoseNet import PoseNet
 import losses.loss_functions as LossF
+
 # from visualize.html_visualizer import HTMLVisualizer as Visualizer
 
 
@@ -196,12 +197,19 @@ class Model(NetInterface):
             if batch_idx < self.opt.vis_batches_vali:
                 for k, v in pred.items():
                     pred[k] = v.cpu().numpy()
-                outdir = os.path.join(self.full_logdir, "visualize", "epoch%04d_vali" % epoch)
+                outdir = os.path.join(
+                    self.full_logdir, "visualize", "epoch%04d_vali" % epoch
+                )
                 os.makedirs(outdir, exist_ok=True)
                 output = self.pack_output(pred, batch)
                 # if self.global_rank == 0 and self.visualizer:
                 #     self.visualizer.visualize(output, batch_idx + (1000 * epoch), outdir)
-                np.savez(os.path.join(outdir, "rank%04d_batch%04d" % (self.global_rank, batch_idx)), **output)
+                np.savez(
+                    os.path.join(
+                        outdir, "rank%04d_batch%04d" % (self.global_rank, batch_idx)
+                    ),
+                    **output,
+                )
 
         batch_size = batch["tgt_img"].shape[0]
         batch_log = {"size": batch_size, **errs}
@@ -312,13 +320,18 @@ class Model(NetInterface):
         for k, v in pred.items():
             pred[k] = v.cpu().numpy()
 
+        if not hasattr(self, "test_loss"):
+            self.test_loss = 0
+
         epoch_string = "best" if self.opt.epoch < 0 else "%04d" % self.opt.epoch
         outdir = os.path.join(self.opt.output_dir, "epoch%s_test" % epoch_string)
         if not hasattr(self, "outdir"):
             self.outdir = outdir
         os.makedirs(outdir, exist_ok=True)
-        # TODO vitualization
         # TODO save result
+        output = self.pack_output(pred, batch)
+        np.savez(os.path.join(outdir, "batch%04d" % (batch_idx)), **output)
+        # TODO vitualization
 
     def on_test_end(self):
         # TODO make test video

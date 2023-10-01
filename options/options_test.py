@@ -11,7 +11,8 @@ def add_general_arguments(parser):
 
     # dataset
     parser.add_argument('--dataset', type=str, required=True, help='name of the dataset')
-
+    # parser.add_argument('--dataset_dir', type=str, default=None,
+    #                     help='manually specify dataset')
     # dataloader
     parser.add_argument('--workers', type=int, default=4,
                         help='number of data loading workers')
