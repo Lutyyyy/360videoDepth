@@ -13,22 +13,15 @@ from . import custom_transforms
 class Dataset(base_dataset):
     @classmethod
     def add_arguments(cls, parser):
-        parser.add_argument('--sequence_length', type=int, default=3,
-                            help='number of images for training')
-        parser.add_argument("--img_height", type=int, default=512,
-                            help="Image height")
-        parser.add_argument("--img_width", type=int, default=2048,
-                            help="Image width")
+        parser.add_argument("--sequence_length", type=int, default=3, help="number of images for training")
+        parser.add_argument("--img_height", type=int, default=512, help="Image height")
+        parser.add_argument("--img_width", type=int, default=2048, help="Image width")
         # TODO num_threads
-        # parser.add_argument("--val_frac", type=float, default=0.1,
-        #                     help="Fraction of data to use for validation")
+        # parser.add_argument("--val_frac", type=float, default=0.1, help="Fraction of data to use for validation")
 
-        parser.add_argument('--repeat', type=int, default=1,
-                            help='number of repeatition')
-        parser.add_argument('--skip_frames', type=int, default=1,
-                            help='jump sampling from video')
-        parser.add_argument('--exclude_frame_index', action='store_true',
-                            help='filter out static-camera frames in video')  # already done by SfM
+        parser.add_argument("--repeat", type=int, default=1, help="number of repeatition")
+        parser.add_argument("--skip_frames", type=int, default=1, help="jump sampling from video")
+        parser.add_argument("--exclude_frame_index", action="store_true", help="filter out static-camera frames in video")  # already done by SfM
         return parser, set()
 
     def __init__(self, opt, mode="train"):
@@ -52,9 +45,7 @@ class Dataset(base_dataset):
         if opt.dataset == "headcam_dataset":
             self.img_resize = [opt.img_height, opt.img_width]
         else:
-            raise NotImplementedError(
-                f"current dataset {opt.dataset} is not in original dataset"
-            )
+            raise NotImplementedError(f"current dataset {opt.dataset} is not in original dataset")
 
         if mode == "train":
             self.train_transform = custom_transforms.Compose(
@@ -90,9 +81,7 @@ class Dataset(base_dataset):
                 self.with_pseudo_depth = False
                 self._crawl_train_folders(opt.sequence_length)
             else:
-                self.imgs, self.depth = self._crawl_vali_folders(
-                    self.scenes, opt.dataset
-                )
+                self.imgs, self.depth = self._crawl_vali_folders(self.scenes, opt.dataset)
 
     def __len__(self):
         if self.mode == "train":
@@ -107,9 +96,7 @@ class Dataset(base_dataset):
             img = imread(self.imgs[index]).astype(np.float32)
             depth = np.load(self.depth[index]).astype(np.float32)
             # TODO
-            depth = torch.from_numpy(
-                (depth - np.min(depth)) / (np.max(depth) - np.min(depth)) * 100.0
-            ).float()  # Normalization to [0, 10]
+            depth = torch.from_numpy((depth - np.min(depth)) / (np.max(depth) - np.min(depth)) * 100.0).float()  # Normalization to [0, 10]
 
             if self.valid_transform is not None:
                 img, _ = self.valid_transform([img], None)
@@ -119,9 +106,7 @@ class Dataset(base_dataset):
         else:
             sample = self.samples[index]
             tgt_img = imread(sample["tgt_img"]).astype(np.float32)
-            ref_imgs = [
-                imread(ref_img).astype(np.float32) for ref_img in sample["ref_imgs"]
-            ]
+            ref_imgs = [imread(ref_img).astype(np.float32) for ref_img in sample["ref_imgs"]]
 
             if self.mode == "train":
                 data_transform = self.train_transform
@@ -131,27 +116,18 @@ class Dataset(base_dataset):
                 raise NotImplemented(f"Unknown transformation")
 
             if self.with_pseudo_depth:
-                tgt_pseudo_depth = np.load(sample["tgt_pseudo_depth"]).astype(
-                    np.float32
-                )
+                tgt_pseudo_depth = np.load(sample["tgt_pseudo_depth"]).astype(np.float32)
                 # TODO
-                tgt_pseudo_depth = (
-                    tgt_pseudo_depth / np.max(tgt_pseudo_depth) * 6000
-                )  # Normalization
+                tgt_pseudo_depth = tgt_pseudo_depth / np.max(tgt_pseudo_depth) * 6000  # Normalization
 
             if data_transform is not None:
                 if self.with_pseudo_depth:
-                    imgs, intrinsics = data_transform(
-                        [tgt_img, tgt_pseudo_depth] + ref_imgs,
-                        np.copy(sample["intrinsics"]),
-                    )
+                    imgs, intrinsics = data_transform([tgt_img, tgt_pseudo_depth] + ref_imgs, np.copy(sample["intrinsics"]))
                     tgt_img = imgs[0]
                     tgt_pseudo_depth = imgs[1]
                     ref_imgs = imgs[2:]
                 else:
-                    imgs, intrinsics = data_transform(
-                        [tgt_img] + ref_imgs, np.copy(sample["intrinsics"])
-                    )
+                    imgs, intrinsics = data_transform([tgt_img] + ref_imgs, np.copy(sample["intrinsics"]))
                     tgt_img = imgs[0]
                     ref_imgs = imgs[1:]
             else:
@@ -174,15 +150,11 @@ class Dataset(base_dataset):
         sequence_set = []
         for scene in self.scenes:
             imgs = sorted(scene.files("*.png"))
-            intrinsics = (
-                np.genfromtxt(scene / "cam.txt").astype(np.float32).reshape(3, 3)
-            )
+            intrinsics = np.genfromtxt(scene / "cam.txt").astype(np.float32).reshape(3, 3)
 
             # TODO
             # if self.exclude_frame_index:
-            #     exclude_frame_index = [
-            #         int(index) for index in open(scene / "exclude_frame_index.txt")
-            #     ]
+            #     exclude_frame_index = [int(index) for index in open(scene / "exclude_frame_index.txt")]
             #     imgs = [x for x in imgs if x not in exclude_frame_index]
 
             if self.with_pseudo_depth:
@@ -198,9 +170,7 @@ class Dataset(base_dataset):
             if len(imgs) < sequence_length:
                 continue
 
-            sample_index_list = _generate_sample_index(
-                len(imgs), self.k, sequence_length
-            )
+            sample_index_list = _generate_sample_index(len(imgs), self.k, sequence_length)
 
             for sample_index in sample_index_list:
                 sample = {

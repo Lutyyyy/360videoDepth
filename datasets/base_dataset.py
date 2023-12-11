@@ -16,6 +16,4 @@ class Dataset(torch.utils.data.Dataset):
     def convert_to_torch(loaded_sample):
         for k, v in loaded_sample.items():
             if isinstance(v, numpy.ndarray):
-                # from util.util_print import str_debug
-                # print(str_debug)
                 loaded_sample[k] = torch.from_numpy(v).float()

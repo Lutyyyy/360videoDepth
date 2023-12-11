@@ -45,20 +45,10 @@ def main():
         if os.path.isdir(logdir):
             # force to overwrite previous experiments, without keyborad confirmations
             if opt.force_overwrite:
-                print(
-                    str_warning,
-                    ("removing Experiment %d at\n\t%s\n") % (opt.expr_id, logdir),
-                )
+                print(str_warning, ("removing Experiment %d at\n\t%s\n") % (opt.expr_id, logdir))
                 os.system("rm -rf " + logdir)
             elif opt.expr_id <= 0:
-                print(
-                    str_warning,
-                    (
-                        "Will remove Experiment %d at\n\t%s\n"
-                        "Do you want to continue? (y/n)"
-                    )
-                    % (opt.expr_id, logdir),
-                )
+                print(str_warning, ("Will remove Experiment %d at\n\t%s\n" "Do you want to continue? (y/n)") % (opt.expr_id, logdir))
                 need_input = True
                 while need_input:
                     response = input().lower()
@@ -81,10 +71,7 @@ def main():
 
     # Save opt
     if os.path.exists(os.path.join(logdir, "opt.pt")) and opt.pt_no_overwrite:
-        print(
-            str_warning,
-            "not overwriting previous opt.pt, this should only be set when doing on the fly eval.",
-        )
+        print(str_warning, "not overwriting previous opt.pt, this should only be set when doing on the fly eval.")
         pass
     else:
         torch.save(vars(opt), os.path.join(logdir, "opt.pt"))
@@ -99,10 +86,7 @@ def main():
     if opt.multiprocess_distributed:
         print(str_stage, "using multiprocessing distributed parallel model")
         if opt.gpu != "none":
-            print(
-                str_warning,
-                f"ignoring the gpu set up in opt: {opt.gpu}. Will use all gpus in each node.",
-            )
+            print(str_warning, f"ignoring the gpu set up in opt: {opt.gpu}. Will use all gpus in each node.")
         ngpus = torch.cuda.device_count()
         opt.ngpus = ngpus
         opt.world_size = opt.ngpus * opt.world_size
@@ -175,44 +159,30 @@ def main_worker(local_rank, ngpus, opt):
                 interval=opt.progbar_interval,
                 no_accum=opt.no_accum,
             ),
-            loggers.CsvLogger(
-                os.path.join(logdir, "epoch_loss.csv"), allow_unused_fields="all"
-            ),
+            loggers.CsvLogger(os.path.join(logdir, "epoch_loss.csv"), allow_unused_fields="all"),
             loggers.ModelSaveLogger(
                 os.path.join(logdir, "nets", "{epoch:04d}.pt"),
                 period=opt.save_net,
                 save_optimizer=opt.save_net_opt,
             ),
-            loggers.ModelSaveLogger(
-                os.path.join(logdir, "checkpoint.pt"), period=1, save_optimizer=True
-            ),
+            loggers.ModelSaveLogger(os.path.join(logdir, "checkpoint.pt"), period=1, save_optimizer=True),
             best_model_logger,
         ]
 
         if opt.log_batch:
-            logger_list.append(
-                loggers.BatchCsvLogger(
-                    os.path.join(logdir, "batch_loss.csv"), allow_unused_fields="all"
-                )
-            )
+            logger_list.append(loggers.BatchCsvLogger(os.path.join(logdir, "batch_loss.csv"), allow_unused_fields="all"))
 
         if opt.tensorboard:
             if opt.tensorboard_keyword != "none":
                 [parent_dir, sub_dir] = logdir.split(f"/{opt.tensorboard_keyword}/")
-                tf_logdir = os.path.join(
-                    parent_dir, opt.tensorboard_keyword, "tensorboard", sub_dir
-                )
+                tf_logdir = os.path.join(parent_dir, opt.tensorboard_keyword, "tensorboard", sub_dir)
             else:
-                tf_logdir = os.path.join(
-                    opt.logdir, "tensorboard", opt.exprdir, str(opt.expr_id)
-                )
+                tf_logdir = os.path.join(opt.logdir, "tensorboard", opt.exprdir, str(opt.expr_id))
 
             if os.path.exists(tf_logdir) and opt.resume == 0:
                 os.system("rm -r " + tf_logdir)
 
-            tensorboard_logger = loggers.TensorBoardLogger(
-                tf_logdir, opt.html_logger, allow_unused_fields="all"
-            )
+            tensorboard_logger = loggers.TensorBoardLogger(tf_logdir, opt.html_logger, allow_unused_fields="all")
             logger_list.append(tensorboard_logger)
         logger = loggers.ComposeLogger(logger_list)
 
@@ -253,21 +223,13 @@ def main_worker(local_rank, ngpus, opt):
             net_filename = os.path.join(logdir, "best.pt")
         else:
             # resume specified model
-            net_filename = os.path.join(logdir, "nets", "{epoch:04d}.pt").format(
-                epoch=opt.resume
-            )
+            net_filename = os.path.join(logdir, "nets", "{epoch:04d}.pt").format(epoch=opt.resume)
 
         if not os.path.isfile(net_filename):
-            _safe_print(
-                str_warning,
-                ("Network file not found for opt.resume=%d. " "Starting from scratch")
-                % opt.resume,
-            )
+            _safe_print(str_warning, ("Network file not found for opt.resume=%d. " "Starting from scratch") % opt.resume)
         else:
             # if global_rank == 0:
-            additional_values = model.load_state_dict(
-                net_filename, load_optimizer="auto"
-            )
+            additional_values = model.load_state_dict(net_filename, load_optimizer="auto")
             try:
                 initial_epoch += additional_values["epoch"]
             except KeyError as err:
@@ -314,9 +276,7 @@ def main_worker(local_rank, ngpus, opt):
 
     # Setting up data sampler
     if opt.multiprocess_distributed:
-        training_sampler = torch.utils.data.distributed.DistributedSampler(
-            dataset_train
-        )
+        training_sampler = torch.utils.data.distributed.DistributedSampler(dataset_train)
         call_back = training_sampler.set_epoch
         training_sampler.set_epoch(opt.epoch)
     else:
@@ -347,22 +307,10 @@ def main_worker(local_rank, ngpus, opt):
     )
 
     if global_rank == 0:
-        _safe_print(
-            str_verbose,
-            "Time spent in data IO initialization: %.2fs" % (time.time() - start_time),
-        )
-        _safe_print(
-            str_verbose,
-            "# training points: " + str(len(dataset_train))
-        )
-        _safe_print(
-            str_verbose,
-            "# training batches per epoch: " + str(len(dataloader_train))
-        )
-        _safe_print(
-            str_verbose,
-            "# test batches: " + str(len(dataloader_vali))
-        )
+        _safe_print(str_verbose, "Time spent in data IO initialization: %.2fs" % (time.time() - start_time))
+        _safe_print(str_verbose, "# training points: " + str(len(dataset_train)))
+        _safe_print(str_verbose, "# training batches per epoch: " + str(len(dataloader_train)))
+        _safe_print(str_verbose, "# test batches: " + str(len(dataloader_vali)))
 
     # Training
     if opt.epoch > 0:

@@ -90,9 +90,7 @@ class NetInterface(object):
 
         def init_func(m, init_type=init_type):
             classname = m.__class__.__name__
-            if hasattr(m, "weight") and (
-                classname.find("Conv") != -1 or classname.find("Linear") != -1
-            ):
+            if hasattr(m, "weight") and (classname.find("Conv") != -1 or classname.find("Linear") != -1):
                 if init_type == "normal":
                     init.normal_(m.weight.data, 0.0, init_param)
                 elif init_type == "xavier":
@@ -102,9 +100,7 @@ class NetInterface(object):
                 elif init_type == "orth":
                     init.orthogonal_(m.weight.data, gain=init_param)
                 else:
-                    raise NotImplementedError(
-                        "initialization method [%s] is not implemented" % init_type
-                    )
+                    raise NotImplementedError("initialization method [%s] is not implemented" % init_type)
                 if hasattr(m, "bias") and m.bias is not None:
                     init.constant_(m.bias.data, 0.0)
             elif classname.find("BatchNorm") != -1:
@@ -132,9 +128,7 @@ class NetInterface(object):
                         mvar = var.to(device, non_blocking=non_blocking)
                     setattr(getattr(self, var_type), var_name, mvar)
                 else:
-                    setattr(
-                        self, v, getattr(self, v).to(device, non_blocking=non_blocking)
-                    )
+                    setattr(self, v, getattr(self, v).to(device, non_blocking=non_blocking))
             else:
                 v.to(device, non_blocking=non_blocking)
 
@@ -191,19 +185,14 @@ class NetInterface(object):
         samples_per_epoch = _get_num_samples(dataloader)
         if max_batches_per_train is not None:
             steps_per_epoch = min(max_batches_per_train, steps_per_epoch)
-            samples_per_epoch = min(
-                samples_per_epoch, steps_per_epoch * dataloader.batch_sampler.batch_size
-            )
+            samples_per_epoch = min(samples_per_epoch, steps_per_epoch * dataloader.batch_sampler.batch_size)
         self.opt.epoch_batches = steps_per_epoch
         if dataloader_vali is not None:
             steps_per_eval = len(dataloader_vali)
             samples_per_eval = _get_num_samples(dataloader_vali)
             if max_batches_per_vali is not None:
                 steps_per_eval = min(steps_per_eval, max_batches_per_vali)
-                samples_per_eval = min(
-                    samples_per_eval,
-                    steps_per_eval * dataloader_vali.batch_sampler.batch_size,
-                )
+                samples_per_eval = min(samples_per_eval, steps_per_eval * dataloader_vali.batch_sampler.batch_size)
         else:
             steps_per_eval = 0
             samples_per_eval = 0
@@ -246,9 +235,7 @@ class NetInterface(object):
 
                 batch_log = self._train_on_batch(epoch, i, data)
                 if batch_log is None:
-                    raise ValueError(
-                        "Batch log is not returned by _train_on_batch method. Aborting."
-                    )
+                    raise ValueError("Batch log is not returned by _train_on_batch method. Aborting.")
 
                 batch_log["batch"] = i
                 batch_log["epoch"] = epoch
@@ -303,9 +290,7 @@ class NetInterface(object):
         # Run actual training
         if vali_at_start:
             if dataloader_vali is None:
-                raise ValueError(
-                    "eval_at_beginning is set to True but no eval data is given."
-                )
+                raise ValueError("eval_at_beginning is set to True but no eval data is given.")
             _vali(initial_epoch - 1)
         for epoch in range(initial_epoch, initial_epoch + epochs):
             _train(epoch)
@@ -350,9 +335,7 @@ class NetInterface(object):
         state_dicts = dict()
         state_dicts["nets"] = [net.state_dict() for net in self._nets]
         if save_optimizer:
-            state_dicts["optimizers"] = [
-                optimizer.state_dict() for optimizer in self._optimizers
-            ]
+            state_dicts["optimizers"] = [optimizer.state_dict() for optimizer in self._optimizers]
         for k, v in additional_values.items():
             state_dicts[k] = v
         torch.save(state_dicts, filepath)
@@ -378,9 +361,7 @@ class NetInterface(object):
                 # load optimizer state without overwriting training hyper-parameters, e.g. lr
                 _optimizer_load_state_dict(optimizer, state, keep_training_params=True)
 
-        additional_values = {
-            k: v for k, v in state_dicts.items() if k not in ("optimizers", "nets")
-        }
+        additional_values = {k: v for k, v in state_dicts.items() if k not in ("optimizers", "nets")}
         return additional_values
 
     def pack_output(self, pred, batch):
@@ -402,11 +383,7 @@ def _get_num_samples(dataloader):
     # import torch.utils.data.sampler as samplers
     batch_sampler = dataloader.batch_sampler
     if batch_sampler.drop_last:
-        return (
-            len(batch_sampler.sampler)
-            // batch_sampler.batch_size
-            * batch_sampler.batch_size
-        )
+        return len(batch_sampler.sampler) // batch_sampler.batch_size * batch_sampler.batch_size
     return len(batch_sampler.sampler)
 
 

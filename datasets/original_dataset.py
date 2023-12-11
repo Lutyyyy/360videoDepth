@@ -15,14 +15,10 @@ import configs
 class Dataset(base_dataset):
     @classmethod
     def add_arguments(cls, parser):
-        parser.add_argument('--sequence_length', type=int, default=3,
-                            help='number of images for training')
-        parser.add_argument('--skip_frames', type=int, default=1,
-                            help='jump sampling from video')
-        parser.add_argument('--use_frame_index', action='store_true',
-                            help='filter out static-camera frames in video')
-        parser.add_argument('--repeat', type=int, default=1,
-                            help='number of repeatition')
+        parser.add_argument("--sequence_length", type=int, default=3, help="number of images for training")
+        parser.add_argument("--skip_frames", type=int, default=1, help="jump sampling from video")
+        parser.add_argument("--use_frame_index", action="store_true", help="filter out static-camera frames in video")
+        parser.add_argument("--repeat", type=int, default=1, help="number of repeatition")
         return parser, set()
 
     def __init__(self, opt, mode="train"):
@@ -41,9 +37,7 @@ class Dataset(base_dataset):
         elif opt.dataset in ["nyu", "tum", "bonn"]:
             self.img_resize = [256, 320]
         else:
-            raise NotImplementedError(
-                f"current dataset {opt.dataset} is not in original dataset"
-            )
+            raise NotImplementedError(f"current dataset {opt.dataset} is not in original dataset")
 
         if mode == "train":
             self.train_transform = custom_transforms.Compose(
@@ -57,9 +51,7 @@ class Dataset(base_dataset):
             )
             self.data_path = Path(data_root) / f"{opt.dataset}" / "training"
             scene_list_path = self.data_path / "train.txt"
-            self.scenes = [
-                self.data_path / folder[:-1] for folder in open(scene_list_path)
-            ]
+            self.scenes = [self.data_path / folder[:-1] for folder in open(scene_list_path)]
             self.k = opt.skip_frames
             self.use_frame_index = opt.use_frame_index
             self.with_pseudo_depth = True  # if V3 else False
@@ -74,9 +66,7 @@ class Dataset(base_dataset):
             )
             self.data_path = Path(data_root) / f"{opt.dataset}" / "training"
             scene_list_path = self.data_path / "val.txt"
-            self.scenes = [
-                self.data_path / folder[:-1] for folder in open(scene_list_path)
-            ]
+            self.scenes = [self.data_path / folder[:-1] for folder in open(scene_list_path)]
             if self.opt.val_mode == "photo":
                 self.k = opt.skip_frames
                 self.use_frame_index = opt.use_frame_index
@@ -84,9 +74,7 @@ class Dataset(base_dataset):
                 self._crawl_train_folders(opt.sequence_length)
             else:
                 # val_mode == "depth"
-                self.imgs, self.depth = self._crawl_vali_folders(
-                    self.scenes, opt.dataset
-                )
+                self.imgs, self.depth = self._crawl_vali_folders(self.scenes, opt.dataset)
 
     def __len__(self):
         if self.mode == "train":
@@ -101,35 +89,20 @@ class Dataset(base_dataset):
             img = imread(self.imgs[index]).astype(np.float32)
 
             if self.opt.dataset in ["nyu"]:
-                depth = (
-                    torch.from_numpy(
-                        imread(self.depth[index]).astype(np.float32)
-                    ).float()
-                    / 5000
-                )
+                depth = torch.from_numpy(imread(self.depth[index]).astype(np.float32)).float() / 5000
             if self.opt.dataset in ["bonn", "tum"]:
-                depth = (
-                    torch.from_numpy(
-                        imread(self.depth[index]).astype(np.float32)
-                    ).float()
-                    / 1000
-                )
+                depth = torch.from_numpy(imread(self.depth[index]).astype(np.float32)).float() / 1000
             elif self.opt.dataset in ["kitti", "ddad"]:
-                depth = torch.from_numpy(
-                    self._load_sparse_depth(self.depth[index]).astype(np.float32)
-                )
+                depth = torch.from_numpy(self._load_sparse_depth(self.depth[index]).astype(np.float32))
 
             if self.valid_transform is not None:
                 img, _ = self.valid_transform([img], None)
                 img = img[0]
-
             sample_loaded = {"tgt_img": img, "gt_depth": depth}
         else:
             sample = self.samples[index]
             tgt_img = imread(sample["tgt_img"]).astype(np.float32)
-            ref_imgs = [
-                imread(ref_img).astype(np.float32) for ref_img in sample["ref_imgs"]
-            ]
+            ref_imgs = [imread(ref_img).astype(np.float32) for ref_img in sample["ref_imgs"]]
 
             if self.mode == "train":
                 data_transform = self.train_transform
@@ -143,17 +116,12 @@ class Dataset(base_dataset):
 
             if data_transform is not None:
                 if self.with_pseudo_depth:
-                    imgs, intrinsics = data_transform(
-                        [tgt_img, tgt_pseudo_depth] + ref_imgs,
-                        np.copy(sample["intrinsics"]),
-                    )
+                    imgs, intrinsics = data_transform([tgt_img, tgt_pseudo_depth] + ref_imgs, np.copy(sample["intrinsics"]))
                     tgt_img = imgs[0]
                     tgt_pseudo_depth = imgs[1]
                     ref_imgs = imgs[2:]
                 else:
-                    imgs, intrinsics = data_transform(
-                        [tgt_img] + ref_imgs, np.copy(sample["intrinsics"])
-                    )
+                    imgs, intrinsics = data_transform([tgt_img] + ref_imgs, np.copy(sample["intrinsics"]))
                     tgt_img = imgs[0]
                     ref_imgs = imgs[1:]
             else:
@@ -177,9 +145,7 @@ class Dataset(base_dataset):
         sequence_set = []
 
         for scene in self.scenes:
-            intrinsics = (
-                np.genfromtxt(scene / "cam.txt").astype(np.float32).reshape((3, 3))
-            )
+            intrinsics = np.genfromtxt(scene / "cam.txt").astype(np.float32).reshape((3, 3))
 
             imgs = sorted(scene.files("*.jpg"))
 
@@ -195,9 +161,7 @@ class Dataset(base_dataset):
             if len(imgs) < sequence_length:
                 continue
 
-            sample_index_list = _generate_sample_index(
-                len(imgs), self.k, sequence_length
-            )
+            sample_index_list = _generate_sample_index(len(imgs), self.k, sequence_length)
             for sample_index in sample_index_list:
                 sample = {
                     "intrinsics": intrinsics,
@@ -228,7 +192,7 @@ class Dataset(base_dataset):
 
     def _load_sparse_depth(self, filename):
         """
-        Convert this SparseArray array to a dense numpy.ndarray. 
+        Convert this SparseArray array to a dense numpy.ndarray.
         Note that this may take a large amount of memory and time.
         """
         sparse_depth = sparse.load_npz(filename)
